@@ -1,0 +1,1 @@
+export { GlobalMiddleWare } from './global';

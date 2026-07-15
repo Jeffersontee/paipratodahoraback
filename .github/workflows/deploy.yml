@@ -1,0 +1,95 @@
+name: Deploy Adega Hub
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+
+jobs:
+  # ESTEIRA DE STAGING
+  deploy-staging:
+    if: github.ref_name == 'staging'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.20.2" # Versão exata que o Heroku está usando nos logs
+          cache: "npm"
+
+      - name: Instalar libssl1.1 para compatibilidade do MongoDB Memory Server
+        run: |
+          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+          sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+        continue-on-error: true
+
+      - name: Validar integridade do package-lock.json
+        run: npm ci --foreground-scripts # Garante o rigor total no GitHub
+
+      - name: Rodar Testes e Validar Build
+        run: |
+          # Se o npm ci passar, as dependências já estão instaladas corretamente
+          # npm install não é mais necessário aqui
+          npm test
+          npm run build
+
+      - name: Deploy to Heroku Staging
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # Remove o remoto se ele já existir por segurança
+          git remote rm heroku || true
+
+          # Utiliza o segredo HEROKU_APP_STAGING definido no repositório
+          git remote add heroku https://heroku:$HEROKU_API_KEY@git.heroku.com/${{ secrets.HEROKU_APP_STAGING }}.git
+
+          # Envia a branch staging para a main do Heroku
+          git push heroku HEAD:main --force
+
+  # ESTEIRA DE PRODUÇÃO
+  deploy-production:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.20.2"
+          cache: "npm"
+
+      - name: Instalar libssl1.1 para compatibilidade do MongoDB Memory Server
+        run: |
+          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+          sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+        continue-on-error: true
+
+      - name: Validar integridade do package-lock.json
+        run: npm ci --foreground-scripts
+
+      - name: Rodar Testes e Validar Build
+        run: |
+          npm test
+          npm run build
+
+      - name: Deploy to Heroku Production
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          git remote rm heroku || true
+
+          # Utiliza o segredo HEROKU_APP_PRODUCTION definido no repositório
+          git remote add heroku https://heroku:$HEROKU_API_KEY@git.heroku.com/${{ secrets.HEROKU_APP_PRODUCTION }}.git
+
+          # Envia a branch main para a main do Heroku
+          git push heroku HEAD:main --force

@@ -1,13 +1,17 @@
-import express from 'express';
-import cors from 'cors';
+import { Utils } from './utils/Utils';
+Utils.dotenvConfigs();
 
-const app = express();
+import { Server } from './server';
 
-app.use(cors());
-app.use(express.json());
+export const app = new Server().app;
+let port = parseInt(process.env.PORT || '3000') || 3000;
+const hostname = process.env.HOSTNAME || process.env.HOST || '0.0.0.0';
+process.env.TZ = "America/Sao_Paulo";
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ success: true, message: 'Server is healthy' });
-});
-
-export default app;
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(port, () => {
+        const env = process.env.NODE_ENV || 'development';
+        const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        console.log(`🐧 [${env.toUpperCase()}] Server is running ${hostname} at port ${port} (Local Time: ${now})`);
+    });
+}
