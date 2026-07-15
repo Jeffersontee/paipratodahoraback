@@ -4,7 +4,11 @@ import Service from '../models/Service.model';
 export class ServiceController {
     static async list(req: Request, res: Response, next: NextFunction) {
         try {
-            const services = await Service.find().sort({ createdAt: -1 });
+            const filter: any = {};
+            if (req.query.company_id) {
+                filter.company_id = req.query.company_id;
+            }
+            const services = await Service.find(filter).sort({ createdAt: -1 });
             return res.status(200).json({
                 success: true,
                 data: services
@@ -16,7 +20,7 @@ export class ServiceController {
 
     static async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, description, icon, category, price, status } = req.body;
+            const { name, description, icon, category, price, status, company_id } = req.body;
             
             const service = new Service({
                 name,
@@ -24,7 +28,8 @@ export class ServiceController {
                 icon,
                 category,
                 price,
-                status
+                status,
+                company_id
             });
 
             await service.save();
@@ -55,10 +60,10 @@ export class ServiceController {
 
     static async update(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, description, icon, category, price, status } = req.body;
+            const { name, description, icon, category, price, status, company_id } = req.body;
             const service = await Service.findByIdAndUpdate(
                 req.params.id,
-                { name, description, icon, category, price, status },
+                { name, description, icon, category, price, status, company_id },
                 { new: true, runValidators: true }
             );
 

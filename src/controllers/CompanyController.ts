@@ -19,8 +19,7 @@ export class CompanyController {
             const { name, owner_name, short_name, description, cnpj, email, active } = req.body;
             const existingCompany = await Company.findOne({ cnpj });
             if (existingCompany) {
-                req.errorStatus = 422;
-                throw new Error('A company with this CNPJ already exists');
+                return res.status(422).json({ success: false, message: 'A company with this CNPJ already exists' });
             }
 
             const company = new Company({
@@ -47,8 +46,7 @@ export class CompanyController {
         try {
             const company = await Company.findById(req.params.id);
             if (!company) {
-                req.errorStatus = 404;
-                throw new Error('Company not found');
+                return res.status(404).json({ success: false, message: 'Company not found' });
             }
             return res.status(200).json({
                 success: true,
@@ -69,8 +67,7 @@ export class CompanyController {
             );
 
             if (!company) {
-                req.errorStatus = 404;
-                throw new Error('Company not found');
+                return res.status(404).json({ success: false, message: 'Company not found' });
             }
 
             return res.status(200).json({
@@ -86,8 +83,7 @@ export class CompanyController {
         try {
             const company = await Company.findByIdAndDelete(req.params.id);
             if (!company) {
-                req.errorStatus = 404;
-                throw new Error('Company not found');
+                return res.status(404).json({ success: false, message: 'Company not found' });
             }
             return res.status(200).json({
                 success: true,

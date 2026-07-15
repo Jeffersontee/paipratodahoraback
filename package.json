@@ -2,11 +2,12 @@
   "name": "bravoback",
   "version": "1.0.0",
   "description": "Backend do sistema Bravo Instalações",
-  "main": "dist/server.js",
+  "main": "dist/index.js",
   "scripts": {
-    "start-dev": "nodemon --exec ts-node --files src/server.ts",
+    "start-dev": "nodemon --exec ts-node --files src/index.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/index.js",
+    "seed": "ts-node src/scripts/InitialBravoDb.ts"
   },
   "keywords": [],
   "author": "",

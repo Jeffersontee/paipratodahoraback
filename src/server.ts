@@ -36,6 +36,9 @@ import * as path from 'path'; // Adicione este import no topo
 // import ObservationRouter from './routers/ObservationRouter';
 import CompanyRouter from './routers/CompanyRouter';
 import ServiceRouter from './routers/ServiceRouter';
+import CollaboratorRouter from './routers/CollaboratorRouter';
+import UnitRouter from './routers/UnitRouter';
+import ServiceOrderRouter from './routers/ServiceOrderRouter';
 
 export class Server {
     public app: express.Application = express();
@@ -252,6 +255,9 @@ export class Server {
 
         this.app.use('/api/companies', CompanyRouter);
         this.app.use('/api/services', ServiceRouter);
+        this.app.use('/api/collaborators', CollaboratorRouter);
+        this.app.use('/api/units', UnitRouter);
+        this.app.use('/api/service-orders', ServiceOrderRouter);
 
         // Alias para capturar callbacks de OAuth que não possuem o prefixo /api/payments
         // Isso resolve o erro 404 quando o Redirect URI é configurado na raiz no painel do MP
@@ -279,7 +285,7 @@ export class Server {
                 return next(error);
             }
 
-            const errorStatus = req.errorStatus || 500;
+            const errorStatus = (req as any).errorStatus || 500;
             res.status(errorStatus).json({
                 message: error.message || 'Something went wrong. Please try again!',
                 status_code: errorStatus

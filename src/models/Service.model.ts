@@ -1,4 +1,4 @@
-import { Schema, Document, model } from 'mongoose';
+import { Schema, Document, model, Types } from 'mongoose';
 
 export interface IService {
     name: string;
@@ -7,6 +7,7 @@ export interface IService {
     category: string;
     price: number;
     status: 'ACTIVE' | 'INACTIVE';
+    company_id?: Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -20,7 +21,8 @@ const ServiceSchema = new Schema<IServiceDocument>(
         icon: { type: String, required: true },
         category: { type: String, required: true },
         price: { type: Number, required: true },
-        status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' }
+        status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' },
+        company_id: { type: Schema.Types.ObjectId, ref: 'Company', required: false }
     },
     {
         timestamps: true
