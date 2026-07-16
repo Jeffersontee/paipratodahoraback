@@ -190,13 +190,26 @@ export class UserController {
     }
 
     static async login(req: Request, res: Response, next: NextFunction) {
-        const user = req.user as IUser & { password: string }; // Asserção de tipo para incluir a propriedade 'password'
-        const password = req.body.password;
-        const data = {
-            password,
-            encrypt_password: user.password // Agora o TypeScript reconhece 'password'
-        };
         try {
+            let user = req.user as IUser & { password: string };
+            
+            // Se o usuário não foi populado por um middleware (ex: validador), busca pelo email
+            if (!user) {
+                const email = req.body.email;
+                user = await User.findOne({ email }).select('+password') as IUser & { password: string };
+                
+                if (!user) {
+                    throw new Error('E-mail ou senha incorretos.');
+                }
+                req.user = user;
+            }
+
+            const password = req.body.password;
+            const data = {
+                password,
+                encrypt_password: user.password // Agora o TypeScript reconhece 'password'
+            };
+
             // check password
             await Utils.comparePassword(data);
 

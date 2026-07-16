@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import { getEnvironmentVariables } from './environments/enviroment';
-// import UserRouter from './routers/UserRouter';
+import UserRouter from './routers/UserRouter';
 // import StaffRouter from './routers/StaffRouter';
 // import BannerRouter from './routers/BannerRouter';
 import { CronService } from './services/CronService';
@@ -228,7 +228,7 @@ export class Server {
 
     setRoutes() {
         this.app.use('/src/uploads', express.static('src/uploads'));
-        // this.app.use('/api/users', UserRouter);
+        this.app.use('/api/users', UserRouter);
         // this.app.use('/api/staff', StaffRouter);
         // this.app.use('/api/banners', BannerRouter);
         // this.app.use('/api/cities', CityRouter);

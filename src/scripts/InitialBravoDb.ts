@@ -26,14 +26,14 @@ async function seedDatabase() {
 
     // 1. Criar Super Admin
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('123456', salt);
+    const hashedPassword = await bcrypt.hash('Bravo@25', salt);
     
     const superAdmin = await User.create({
         name: 'Super Admin',
         email: 'admin@bravoinstalacoes.com.br',
         password: hashedPassword,
-        type: 'SUPER_ADMIN_TYPE',
-        status: 'ACTIVE'
+        type: 'super_admin',
+        status: 'active'
     });
     console.log('✅ Super Admin criado.');
 
@@ -62,17 +62,17 @@ async function seedDatabase() {
         name: 'João Gerente (Zé Delivery)',
         email: 'joao@zedelivery.com',
         password: hashedPassword,
-        type: 'COMPANY_ADMIN_TYPE',
+        type: 'admin',
         company_id: zeDelivery._id,
-        status: 'ACTIVE'
+        status: 'active'
     });
     
     const carlosTecnico = await User.create({
         name: 'Carlos Técnico',
         email: 'carlos@bravoinstalacoes.com.br',
         password: hashedPassword,
-        type: 'COLLABORATOR_TYPE',
-        status: 'ACTIVE'
+        type: 'collaborator',
+        status: 'active'
     });
     console.log('✅ Colaboradores criados.');
 
