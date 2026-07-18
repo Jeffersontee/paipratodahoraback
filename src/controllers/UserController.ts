@@ -114,6 +114,89 @@ export class UserController {
         }
     }
 
+    static async signupCompany(req: Request, res: Response, next: NextFunction) {
+        const { company_name, cnpj, owner_name, email, password, phone } = req.body;
+        const verification_token = Utils.generateVerificationToken();
+
+        try {
+            // Check existing company
+            const existingCompany = await mongoose.model('Company').findOne({ cnpj });
+            if (existingCompany) {
+                return res.status(409).json({ success: false, message: 'CNPJ já cadastrado.', status_code: 409 });
+            }
+
+            const hash = await Utils.encryptPassword(password);
+
+            // Create Company
+            const company = await new (mongoose.model('Company'))({
+                name: company_name,
+                owner_name,
+                cnpj,
+                email,
+                active: true
+            }).save();
+
+            // Create User (Owner)
+            const userData = {
+                email,
+                verification_token,
+                verification_token_time: Date.now() + new Utils().MAX_TOKEN_TIME,
+                phone,
+                password: hash,
+                name: owner_name,
+                type: 'company_owner',
+                status: 'active',
+                company_id: company._id
+            };
+
+            const user = await new User(userData).save();
+
+            const user_data = {
+                _id: user._id,
+                email: user.email,
+                email_verified: user.email_verified,
+                phone: user.phone,
+                name: user.name,
+                type: user.type,
+                status: user.status,
+                company_id: user.company_id,
+                created_at: user.created_at,
+                updated_at: user.updated_at
+            };
+
+            const payload = {
+                email: user.email,
+                type: user.type
+            };
+
+            const access_token = Jwt.jwtSign(payload, user._id);
+            const refresh_token = await Jwt.jwtSignRefreshToken(payload, user._id);
+
+            // Send Verification Email
+            try {
+                await NodeMailer.sendMail({
+                    to: [user.email],
+                    subject: 'Verificação de e-mail (Empresa)',
+                    html: `<h1>Seu OTP é ${verification_token}</h1>`
+                });
+            } catch (mailError) {
+                console.error('⚠️ [MAIL ERROR]: Falha ao enviar e-mail de verificação:', mailError);
+            }
+
+            return res.status(201).json({
+                success: true,
+                data: {
+                    token: access_token,
+                    refreshToken: refresh_token,
+                    user: user_data,
+                    company: company
+                }
+            });
+        } catch (e: any) {
+            next(e);
+        }
+    }
+
     static async verifyUserEmailToken(req: Request, res: Response, next: NextFunction) {
         const verification_token = req.body.verification_token;
         console.log('Verification Token', verification_token);

@@ -5,7 +5,7 @@ import { Utils } from '../utils/Utils';
 export class CollaboratorController {
     static async createCollaborator(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, email, phone, password, role, status } = req.body;
+            const { name, email, phone, password, role, status, technician_profile } = req.body;
             
             // Validate required fields
             if (!name || !email || !password || !role) {
@@ -27,8 +27,12 @@ export class CollaboratorController {
             }
 
             const hash = await Utils.encryptPassword(password);
+            
+            // Get the company_id from the admin creating the collaborator
+            const adminUser = await User.findById(req.user?.aud || req.user?.user_id || req.user?._id);
+            const company_id = adminUser?.company_id || null;
 
-            const collaboratorData = {
+            const collaboratorData: any = {
                 name,
                 email,
                 phone: phone || null,
@@ -36,8 +40,13 @@ export class CollaboratorController {
                 type: 'collaborator',
                 role,
                 status: status || 'active',
-                email_verified: true // Supondo verificado por admin
+                email_verified: true, // Supondo verificado por admin
+                company_id: company_id
             };
+
+            if (role === 'technician' && technician_profile) {
+                collaboratorData.technician_profile = technician_profile;
+            }
 
             const collaborator = await new User(collaboratorData).save();
 
@@ -53,7 +62,10 @@ export class CollaboratorController {
 
     static async getCollaborators(req: Request, res: Response, next: NextFunction) {
         try {
-            const collaborators = await User.find({ type: 'collaborator' }).select('-password -__v');
+            const adminUser = await User.findById(req.user?.aud || req.user?.user_id || req.user?._id);
+            const company_id = adminUser?.company_id || null;
+
+            const collaborators = await User.find({ type: 'collaborator', company_id }).select('-password -__v');
             
             res.status(200).json({
                 success: true,

@@ -24,6 +24,7 @@ class UserRouter {
     postRoutes() {
         this.router.post('/login', UserController.login);
         this.router.post('/signup', UserController.signup);
+        this.router.post('/signup-company', UserController.signupCompany);
         this.router.post('/refresh_token', GlobalMiddleWare.decodeRefreshToken, UserController.getNewTokens);
         this.router.post('/logout', GlobalMiddleWare.auth, GlobalMiddleWare.decodeRefreshToken, UserController.logout);
     }

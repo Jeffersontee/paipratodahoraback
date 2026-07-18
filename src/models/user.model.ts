@@ -16,8 +16,14 @@ export interface IUserDocument extends Document {
   reset_password_token?: string;
   reset_password_token_time?: number | Date;
   establishment_id?: Types.ObjectId;
+  company_id?: Types.ObjectId;
   role?: string;
   permissions?: string[];
+  technician_profile?: {
+    specialties: string[];
+    availability: any;
+    is_available_now: boolean;
+  };
   global_payment_config?: any;
   created_at: Date;
   updated_at: Date;
@@ -40,8 +46,14 @@ const UserSchema = new Schema<IUserDocument>(
     reset_password_token: { type: String, required: false },
     reset_password_token_time: { type: Schema.Types.Mixed, required: false },
     establishment_id: { type: Schema.Types.ObjectId, ref: 'Establishment', required: false, default: null },
+    company_id: { type: Schema.Types.ObjectId, ref: 'Company', required: false, default: null },
     role: { type: String, required: false },
     permissions: [{ type: String }],
+    technician_profile: {
+      specialties: [{ type: String }],
+      availability: { type: Schema.Types.Mixed },
+      is_available_now: { type: Boolean, default: false }
+    },
     global_payment_config: { type: Schema.Types.Mixed, required: false },
   },
   {
