@@ -1,4 +1,4 @@
-import { AuthMiddleware } from './auth.middleware';
+﻿import { AuthMiddleware } from './auth.middleware';
 import { TenantMiddleware } from './tenant.middleware';
 import { RequestMiddleware } from './request.middleware';
 import { SubscriptionMiddleware } from './subscription.middleware';
@@ -28,7 +28,7 @@ export const GlobalMiddleWare = {
     // Permissions & Ownership
     canManageItem: PermissionMiddleware.canManageItem,
     canManageProduct: PermissionMiddleware.canManageProduct,
-    canCreateForEstablishment: PermissionMiddleware.canCreateForEstablishment,
+    canCreateForCompany: PermissionMiddleware.canCreateForCompany,
     canManageBanner: PermissionMiddleware.canManageBanner,
 
     // Resource Limits

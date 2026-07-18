@@ -1,9 +1,9 @@
-// import * as dotenv from 'dotenv';
+﻿// import * as dotenv from 'dotenv';
 // dotenv.config();
 
 // import * as mongoose from 'mongoose';
 // import User from '../models/User';
-// import Establishment from '../models/Establishment';
+// import Company from '../models/Company';
 // import City from '../models/City';
 // import Plan from '../models/Plan';
 // import Category from '../models/Category';
@@ -70,7 +70,7 @@
 //         await GlobalOrder.deleteMany({});
 
 //         // Limpa estabelecimentos de seeds anteriores para evitar erro de Duplicated Key
-//         await Establishment.deleteMany({
+//         await Company.deleteMany({
 //             $or: [{ res_name: new RegExp('Adega Seed', 'i') }, { db_name: new RegExp('churn_history_', 'i') }]
 //         });
 
@@ -176,7 +176,7 @@
 //             cancelledDate.setMonth(today.getMonth() - m);
 //             const suffix = Date.now() + m + 999;
 
-//             const churnedEst = new Establishment({
+//             const churnedEst = new Company({
 //                 res_name: `Adega Encerrada ${m} ${suffix}`,
 //                 db_name: `churn_history_${m}_${suffix}`,
 //                 name: 'Ex-Proprietário', // Campo obrigatório no Schema
@@ -251,7 +251,7 @@
 //                     phone: `1199999${String(i).padStart(4, '0')}`,
 //                     password,
 //                     name: `Proprietário ${suffix}`,
-//                     type: 'establishment_admin',
+//                     type: 'company_owner',
 //                     status: 'active',
 //                     email_verified: true
 //                 }).save();
@@ -282,7 +282,7 @@
 //                 const lngJitter = (Math.random() - 0.5) * 0.02;
 //                 const latJitter = (Math.random() - 0.5) * 0.02;
 
-//                 const establishmentDoc = await new Establishment({
+//                 const companyDoc = await new Company({
 //                     res_name: resName,
 //                     short_name: `Adega ${shortId}`,
 //                     name: user.name,
@@ -353,11 +353,11 @@
 //                     enabled_payment_methods: i === 3 ? ['cod'] : ['cod', 'online']
 //                 }).save();
 
-//                 await User.findByIdAndUpdate(user._id, { establishment_id: establishmentDoc._id });
+//                 await User.findByIdAndUpdate(user._id, { company_id: companyDoc._id });
 
 //                 // 2.1 Criar o histórico de assinatura (Subscription Model) para consistência
 //                 const subscriptionDoc = await new Subscription({
-//                     establishment_id: establishmentDoc._id,
+//                     company_id: companyDoc._id,
 //                     plan_id: currentPlan._id,
 //                     status: currentPlan.name === Plans.TRIAL ? 'trialing' : 'active',
 //                     current_period_start: now,
@@ -376,7 +376,7 @@
 //                     const lastMonth = new Date(now);
 //                     lastMonth.setMonth(lastMonth.getMonth() - 1);
 //                     invoiceHistory.push({
-//                         establishment_id: establishmentDoc._id,
+//                         company_id: companyDoc._id,
 //                         subscription_id: subscriptionDoc._id,
 //                         amount: currentPlan.price,
 //                         status: 'paid',
@@ -392,7 +392,7 @@
 //                 if (i === 1) {
 //                     // Adega 1 está ativa e em dia. Próxima fatura agendada para +25 dias.
 //                     invoiceHistory.push({
-//                         establishment_id: establishmentDoc._id,
+//                         company_id: companyDoc._id,
 //                         subscription_id: subscriptionDoc._id,
 //                         amount: currentPlan.price,
 //                         status: 'pending',
@@ -405,7 +405,7 @@
 //                     const overdueDate = new Date(now);
 //                     overdueDate.setDate(overdueDate.getDate() - 10);
 //                     invoiceHistory.push({
-//                         establishment_id: establishmentDoc._id,
+//                         company_id: companyDoc._id,
 //                         subscription_id: subscriptionDoc._id,
 //                         amount: currentPlan.price,
 //                         status: 'overdue',
@@ -416,7 +416,7 @@
 //                 } else if (i === 3) {
 //                     // Adega 3 é trial expirado há 5 dias. Não gera fatura com valor real, apenas a de R$ 0.
 //                     invoiceHistory.push({
-//                         establishment_id: establishmentDoc._id,
+//                         company_id: companyDoc._id,
 //                         subscription_id: subscriptionDoc._id,
 //                         amount: 0,
 //                         status: 'paid',
@@ -432,7 +432,7 @@
 //                     overdueDate2.setDate(overdueDate2.getDate() - 15);
 
 //                     invoiceHistory.push({
-//                         establishment_id: establishmentDoc._id,
+//                         company_id: companyDoc._id,
 //                         subscription_id: subscriptionDoc._id,
 //                         amount: currentPlan.price,
 //                         status: 'overdue',
@@ -442,7 +442,7 @@
 //                     });
 
 //                     invoiceHistory.push({
-//                         establishment_id: establishmentDoc._id,
+//                         company_id: companyDoc._id,
 //                         subscription_id: subscriptionDoc._id,
 //                         amount: currentPlan.price,
 //                         status: 'overdue',
@@ -468,19 +468,19 @@
 //                 const categories = await CategoryModel.insertMany([
 //                     {
 //                         name: 'Bebidas e Vendas',
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         status: true,
 //                         type: 'item'
 //                     },
 //                     {
 //                         name: 'Comidas e Lanches',
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         status: true,
 //                         type: 'item'
 //                     },
 //                     {
 //                         name: 'Insumos de Cozinha',
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         status: true,
 //                         type: 'insumo'
 //                     }
@@ -496,22 +496,22 @@
 //                     {
 //                         description: 'Com gelo e limão',
 //                         linked_categories: [bebidasCat],
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id))
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id))
 //                     },
 //                     {
 //                         description: 'Sem cebola',
 //                         linked_categories: [comidasCat],
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id))
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id))
 //                     },
 //                     {
 //                         description: 'Bem passado',
 //                         linked_categories: [comidasCat],
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id))
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id))
 //                     },
 //                     {
 //                         description: 'Para viagem',
 //                         linked_categories: [bebidasCat, comidasCat],
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id))
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id))
 //                     }
 //                 ]);
 
@@ -531,7 +531,7 @@
 //                         cost_price: 1.0,
 //                         veg: true,
 //                         category_id: new mongoose.Types.ObjectId(String(insumosCat)),
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         stock: 100,
 //                         size: 'un',
 //                         unit: 'un',
@@ -544,7 +544,7 @@
 //                         cost_price: 20.0,
 //                         veg: false,
 //                         category_id: new mongoose.Types.ObjectId(String(insumosCat)),
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         stock: isCriticalStockScenario ? 1 : 10,
 //                         size: '1kg',
 //                         unit: 'kg',
@@ -559,14 +559,14 @@
 //                         name: '500ml',
 //                         sigla: 'ml',
 //                         value: 500,
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         status: true
 //                     },
 //                     {
 //                         name: 'Unidade',
 //                         sigla: 'un',
 //                         value: 1,
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         status: true
 //                     }
 //                 ]);
@@ -574,13 +574,13 @@
 //                     {
 //                         name: 'Garrafa',
 //                         product_sizes_id: [sizes[0]._id],
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         status: true
 //                     },
 //                     {
 //                         name: 'Prato',
 //                         product_sizes_id: [sizes[1]._id],
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         status: true
 //                     }
 //                 ]);
@@ -595,7 +595,7 @@
 //                     status: true,
 //                     veg: true,
 //                     category_id: new mongoose.Types.ObjectId(String(bebidasCat)),
-//                     establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                     company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                     cover: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg',
 //                     unit: 'un',
 //                     is_featured: true,
@@ -640,7 +640,7 @@
 //                     status: true,
 //                     veg: false,
 //                     category_id: new mongoose.Types.ObjectId(String(insumosCat)),
-//                     establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                     company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                     cover: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg',
 //                     unit: 'un',
 //                     is_featured: false,
@@ -664,7 +664,7 @@
 //                     status: true,
 //                     veg: false,
 //                     category_id: new mongoose.Types.ObjectId(String(comidasCat)),
-//                     establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                     company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                     cover: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg',
 //                     unit: 'un',
 //                     is_featured: false,
@@ -727,7 +727,7 @@
 //                     is_combo: true,
 //                     veg: false,
 //                     category_id: new mongoose.Types.ObjectId(String(comidasCat)),
-//                     establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                     company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                     cover: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg',
 //                     unit: 'un',
 //                     is_featured: true,
@@ -780,7 +780,7 @@
 //                         name: `Produto Extra ${k} ${suffix}`,
 //                         status: true,
 //                         category_id: new mongoose.Types.ObjectId(String(bebidasCat)),
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         cover: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg',
 //                         unit: 'un',
 //                         is_featured: false,
@@ -814,7 +814,7 @@
 
 //                     const order = await new OrderModel({
 //                         customer_id: new mongoose.Types.ObjectId(String(randomCustomer._id)),
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         order: [
 //                             {
 //                                 _id: randomProduct._id,
@@ -838,7 +838,7 @@
 //                     // Sincroniza com o Índice Global em background (não trava o loop)
 //                     new GlobalOrder({
 //                         customer_id: new mongoose.Types.ObjectId(String(randomCustomer._id)),
-//                         establishment_id: new mongoose.Types.ObjectId(String(establishmentDoc._id)),
+//                         company_id: new mongoose.Types.ObjectId(String(companyDoc._id)),
 //                         tenant_order_id: order._id,
 //                         items: order.order, // Incluído
 //                         status: order.status,
@@ -857,7 +857,7 @@
 //                 }
 
 //                 // 5.1 Sincroniza métricas denormalizadas para o Dashboard não vir vazio
-//                 await Establishment.findByIdAndUpdate(establishmentDoc._id, {
+//                 await Company.findByIdAndUpdate(companyDoc._id, {
 //                     total_revenue: Number(totalRevGenerated.toFixed(2)),
 //                     monthly_revenue: Number(totalRevGenerated.toFixed(2)),
 //                     orders_count: deliveredCount,
@@ -870,11 +870,11 @@
 //                 const bannerData: any[] = [
 //                     {
 //                         banner: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg',
-//                         establishment_id: establishmentDoc._id,
+//                         company_id: companyDoc._id,
 //                         city_id: defaultCity._id,
 //                         is_global: false,
 //                         radius: planName === 'premium' ? 20 : 5,
-//                         location: establishmentDoc.location,
+//                         location: companyDoc.location,
 //                         status: true,
 //                         // Premium 25 dias, Outros 15 dias
 //                         expires_at: new Date(
@@ -884,11 +884,11 @@
 //                     // BANNER DE TESTE: Criado já expirado (24h atrás)
 //                     {
 //                         banner: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample_expired.jpg',
-//                         establishment_id: establishmentDoc._id,
+//                         company_id: companyDoc._id,
 //                         city_id: defaultCity._id,
 //                         is_global: false,
 //                         radius: 10,
-//                         location: establishmentDoc.location,
+//                         location: companyDoc.location,
 //                         status: true,
 //                         // Data de ontem: Garante que o filtro $gt Date.now() ignore este registro
 //                         expires_at: new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -899,7 +899,7 @@
 //                 if (planName === 'premium') {
 //                     bannerData.push({
 //                         banner: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg',
-//                         establishment_id: establishmentDoc._id,
+//                         company_id: companyDoc._id,
 //                         city_id: defaultCity._id,
 //                         is_global: true,
 //                         radius: 0,
@@ -920,7 +920,7 @@
 
 //         // Sincronização final das métricas no HubDB para garantir dashboard correto
 //         console.log('\n📊 Sincronizando métricas analíticas globais...');
-//         await AnalyticController.syncEstablishmentsMetrics();
+//         await AnalyticController.syncCompanysMetrics();
 
 //         console.log('\n✨ Seed CLI concluído com sucesso!');
 //         process.exit(0);

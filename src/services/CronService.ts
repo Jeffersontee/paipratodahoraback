@@ -1,6 +1,6 @@
-import cron from 'node-cron';
+﻿import cron from 'node-cron';
 import Banner from '../models/banner.model';
-import Establishment from '../models/establishment.model';
+import Company from '../models/company.model';
 import { NotificationService } from './NotificationService';
 import { PaymentOnboardingController } from '../controllers/PaymentOnboardingController';
 import { InvoiceController } from '../controllers/InvoiceController';
@@ -19,13 +19,13 @@ export class CronService {
             const expiringSoon = await Banner.find({
                 expires_at: { $gte: tomorrow, $lte: nextDay },
                 status: true,
-                establishment_id: { $ne: null }
+                company_id: { $ne: null }
             });
 
             for (const banner of expiringSoon) {
-                if (banner.establishment_id) {
+                if (banner.company_id) {
                     await NotificationService.sendBannerExpiryPush(
-                        banner.establishment_id.toString(),
+                        banner.company_id.toString(),
                         banner._id.toString()
                     );
                 }
@@ -57,16 +57,16 @@ export class CronService {
                 safetyMargin.setDate(safetyMargin.getDate() - 150);
 
                 // Busca estabelecimentos que usam MP e não renovam há mais de 150 dias
-                const establishments = await Establishment.find({
+                const companys = await Company.find({
                     'payment_config.mercado_pago.refresh_token': { $exists: true },
                     'payment_config.mercado_pago.last_authorization': { $lt: safetyMargin }
                 });
 
-                console.log(`📡 [CRON]: Encontrados ${establishments.length} tokens para renovar.`);
+                console.log(`📡 [CRON]: Encontrados ${companys.length} tokens para renovar.`);
 
-                for (const est of establishments) {
+                for (const est of companys) {
                     await PaymentOnboardingController.refreshMPToken(est);
-                    console.log(`✅ [CRON]: Token renovado com sucesso para: ${est.res_name}`);
+                    console.log(`✅ [CRON]: Token renovado com sucesso para: ${est.name}`);
                 }
             } catch (error) {
                 console.error('❌ [CRON ERROR]: Falha na rotina de renovação de tokens MP:', error);

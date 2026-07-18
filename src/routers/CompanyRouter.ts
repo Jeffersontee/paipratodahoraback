@@ -15,6 +15,11 @@ class CompanyRouter {
         this.router.get('/:id', CompanyController.get);
         this.router.put('/:id', CompanyController.update);
         this.router.delete('/:id', CompanyController.delete);
+
+        // Usuários da empresa
+        this.router.get('/:id/users', CompanyController.listUsers);
+        this.router.post('/:id/users', CompanyController.assignUser);
+        this.router.delete('/:id/users/:userId', CompanyController.removeUser);
     }
 }
 

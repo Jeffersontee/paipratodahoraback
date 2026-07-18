@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+﻿import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { Redis } from './../utils/Redis';
 import { Jwt } from './../utils/Jwt';
@@ -6,7 +6,7 @@ import { NodeMailer } from '../services/integrations/NodeMailer';
 import { Utils } from './../utils/Utils';
 import User from '../models/user.model';
 import { Cloudinary } from '../services/integrations/Cloudinary';
-import Establishment from '../models/establishment.model';
+import Company from '../models/company.model';
 import Subscription from '../models/Subscription.model';
 import { IUser } from '../models/IUser.model';
 import { AuditService } from '../services/AuditService';
@@ -297,27 +297,27 @@ export class UserController {
             await Utils.comparePassword(data);
 
             // 1. Obtém o ID do estabelecimento diretamente do usuário (agora persistido no banco)
-            let establishmentId: string | null = user.establishment_id ? String(user.establishment_id) : null;
+            let companyId: string | null = user.company_id ? String(user.company_id) : null;
 
             // FALLBACK: Se o admin não tem o ID no perfil, busca pelo vínculo de dono no HubDB
-            if (!establishmentId && user.type === 'establishment_admin') {
-                const est = await Establishment.findOne({ user_id: user._id }).select('_id');
-                if (est) {
-                    establishmentId = String(est._id);
+            if (!companyId && user.type === 'company_owner') {
+                const comp = await Company.findOne({ email: user.email }).select('_id');
+                if (comp) {
+                    companyId = String(comp._id);
                     // Sincronização proativa no HubDB para as próximas sessões
-                    await User.findByIdAndUpdate(user._id, { establishment_id: est._id });
+                    await User.findByIdAndUpdate(user._id, { company_id: comp._id });
                 }
             }
 
             // Busca dados da assinatura para o payload
             let subscriptionStatus = 'active';
             let nextPayment = null;
-            if (establishmentId) {
-                const est = await Establishment.findById(establishmentId).select(
+            if (companyId) {
+                const comp = await Company.findById(companyId).select(
                     'subscription_status next_payment_date'
                 );
-                subscriptionStatus = est?.subscription_status || 'inactive';
-                nextPayment = est?.next_payment_date;
+                subscriptionStatus = comp?.subscription_status || 'inactive';
+                nextPayment = comp?.next_payment_date;
             }
 
             // 2. INCLUI DADOS DE SAAS NO PAYLOAD DO JWT
@@ -326,8 +326,8 @@ export class UserController {
                 type: user.type,
                 subscription_status: subscriptionStatus
             };
-            if (establishmentId) {
-                payload.establishment_id = establishmentId;
+            if (companyId) {
+                payload.company_id = companyId;
             }
 
             console.log('User ID:', user._id);
@@ -348,7 +348,7 @@ export class UserController {
                 status: user.status,
                 created_at: user.created_at,
                 updated_at: user.updated_at,
-                establishment_id: establishmentId,
+                company_id: companyId,
                 subscription_status: subscriptionStatus,
                 next_payment_date: nextPayment
             };
@@ -451,31 +451,31 @@ export class UserController {
         try {
             const profile = await User.findById(user.aud);
             if (profile) {
-                let establishmentId: string | null = profile.establishment_id ? String(profile.establishment_id) : null;
+                let companyId: string | null = profile.company_id ? String(profile.company_id) : null;
                 let subscriptionStatus = 'inactive';
                 let nextPayment = null;
                 let planName = 'Trial';
 
                 // FALLBACK: Garante que o ID chegue ao frontend se houver vínculo de dono
-                if (!establishmentId && profile.type === 'establishment_admin') {
-                    const est = await Establishment.findOne({ user_id: profile._id }).select('_id');
-                    if (est) {
-                        establishmentId = String(est._id);
-                        await User.findByIdAndUpdate(profile._id, { establishment_id: est._id });
+                if (!companyId && profile.type === 'company_owner') {
+                    const comp = await Company.findOne({ email: profile.email }).select('_id');
+                    if (comp) {
+                        companyId = String(comp._id);
+                        await User.findByIdAndUpdate(profile._id, { company_id: comp._id });
                     }
                 }
 
-                if (establishmentId) {
-                    const est: any = await Establishment.findById(establishmentId).select(
+                if (companyId) {
+                    const comp: any = await Company.findById(companyId).select(
                         'subscription_status next_payment_date'
                     );
 
-                    const subscription: any = await Subscription.findOne({ establishment_id: establishmentId })
+                    const subscription: any = await Subscription.findOne({ company_id: companyId })
                         .sort({ created_at: -1 })
                         .populate({ path: 'plan_id', strictPopulate: false });
 
-                    subscriptionStatus = est?.subscription_status || 'inactive';
-                    nextPayment = est?.next_payment_date;
+                    subscriptionStatus = comp?.subscription_status || 'inactive';
+                    nextPayment = comp?.next_payment_date;
                     if (subscription?.plan_id) {
                         planName = subscription.plan_id.name;
                     }
@@ -495,7 +495,7 @@ export class UserController {
                     status: profile.status,
                     created_at: profile.created_at,
                     updated_at: profile.updated_at,
-                    establishment_id: establishmentId,
+                    company_id: companyId,
                     subscription_status: subscriptionStatus,
                     next_payment_date: nextPayment,
                     plan: planName
@@ -608,14 +608,14 @@ export class UserController {
             }
 
             // Obtém o ID diretamente do usuário atualizado
-            let establishmentId: string | null = updatedUser.establishment_id
-                ? String(updatedUser.establishment_id)
+            let companyId: string | null = updatedUser.company_id
+                ? String(updatedUser.company_id)
                 : null;
-            if (!establishmentId && updatedUser.type === 'establishment_admin') {
-                const est = await Establishment.findOne({ user_id: updatedUser._id }).select('_id');
-                if (est) {
-                    establishmentId = String(est._id);
-                    await User.findByIdAndUpdate(updatedUser._id, { establishment_id: est._id });
+            if (!companyId && updatedUser.type === 'company_owner') {
+                const comp = await Company.findOne({ email: updatedUser.email }).select('_id');
+                if (comp) {
+                    companyId = String(comp._id);
+                    await User.findByIdAndUpdate(updatedUser._id, { company_id: comp._id });
                 }
             }
 
@@ -623,7 +623,7 @@ export class UserController {
                 // aud: user.aud,
                 email: updatedUser.email,
                 type: updatedUser.type,
-                ...(establishmentId && { establishment_id: establishmentId })
+                ...(companyId && { company_id: companyId })
             };
             const access_token = Jwt.jwtSign(payload, user.aud);
             const refresh_token = await Jwt.jwtSignRefreshToken(payload, user.aud);
@@ -692,7 +692,7 @@ export class UserController {
                     throw new Error('Limite de segurança atingido. Muitas solicitações de login em curto período.');
                 }
 
-                const establishmentId = decoded_data.establishment_id || null;
+                const companyId = decoded_data.company_id || null;
 
                 // Garante que decoded_data.aud seja uma string válida
                 if (!decoded_data.aud) {
@@ -704,7 +704,7 @@ export class UserController {
                     // user_id: decoded_data.aud,
                     email: decoded_data.email,
                     type: decoded_data.type,
-                    ...(establishmentId && { establishment_id: establishmentId })
+                    ...(companyId && { company_id: companyId })
                 };
                 const access_token = Jwt.jwtSign(payload, userId);
                 const refresh_token = await Jwt.jwtSignRefreshToken(payload, userId);
@@ -865,7 +865,7 @@ export class UserController {
             // Apenas contas reais do App (null) ou contas Shadow deste estabelecimento
             const filter: any = {
                 type: 'user',
-                $or: [{ establishment_id: null }, { establishment_id: req.establishment?._id }]
+                $or: [{ company_id: null }, { company_id: req.company?._id }]
             };
             if (query) {
                 filter.$and = [
@@ -963,7 +963,7 @@ export class UserController {
             const hash = await Utils.encryptPassword('123456');
 
             const newUser = new User({
-                establishment_id: req.establishment?._id || null,
+                company_id: req.company?._id || null,
                 name,
                 phone,
                 email: tempEmail,

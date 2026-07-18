@@ -1,4 +1,4 @@
-import SaaSAudit from '../models/Audit.model';
+﻿import SaaSAudit from '../models/Audit.model';
 import { Request } from 'express';
 import { NotificationService } from './NotificationService';
 
@@ -14,16 +14,16 @@ export class AuditService {
             severity?: 'info' | 'warn' | 'error' | 'critical';
             details?: any;
             user_id?: string;
-            establishment_id?: string;
+            company_id?: string;
         }
     ) {
         try {
             const auditLog = new SaaSAudit({
                 user_id: data.user_id || (req as any)?.user?.aud || (req as any)?.user?._id,
-                establishment_id:
-                    data.establishment_id ||
-                    req?.headers?.['x-establishment-id'] ||
-                    (req as any)?.user?.establishment_id,
+                company_id:
+                    data.company_id ||
+                    req?.headers?.['x-company-id'] ||
+                    (req as any)?.user?.company_id,
                 action: data.action,
                 module: data.module,
                 severity: data.severity || 'info',

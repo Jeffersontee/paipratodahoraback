@@ -1,7 +1,7 @@
-import { getMessaging, Message } from 'firebase-admin/messaging';
+﻿import { getMessaging, Message } from 'firebase-admin/messaging';
 import mongoose from 'mongoose';
 import User from '../models/user.model';
-import Establishment from '../models/establishment.model';
+import Company from '../models/company.model';
 import GlobalOrder from '../models/global.model';
 import { NodeMailer } from './integrations/NodeMailer';
 import { AuditService } from './AuditService';
@@ -34,18 +34,18 @@ export class NotificationService {
                     `ℹ️ [NotificationService]: Push ignorado. Usuário ${user?.email || userId} não possui token FCM.`
                 );
 
-                // Tenta achar o establishment_id associado ao último pedido deste usuário
-                let establishmentId = null;
+                // Tenta achar o company_id associado ao último pedido deste usuário
+                let companyId = null;
                 try {
                     const GlobalOrderModel = mongoose.connection.model('global_orders', GlobalOrder.schema);
                     const lastOrder = await GlobalOrderModel.findOne({ customer_id: userId })
                         .sort({ created_at: -1 })
                         .lean();
                     if (lastOrder) {
-                        establishmentId = lastOrder.establishment_id;
+                        companyId = lastOrder.company_id;
                     }
                 } catch (e) {
-                    console.error('Erro ao buscar establishment_id para o push do cliente', e);
+                    console.error('Erro ao buscar company_id para o push do cliente', e);
                 }
 
                 // AUDITORIA: Registra que o usuário está "cego" por falta de token
@@ -55,7 +55,7 @@ export class NotificationService {
                     severity: 'warn',
                     details: { userId, order_status: status },
                     user_id: userId,
-                    establishment_id: establishmentId ? String(establishmentId) : undefined
+                    company_id: companyId ? String(companyId) : undefined
                 });
                 return; // Usuário não tem token registrado ou não existe
             }
@@ -93,16 +93,16 @@ export class NotificationService {
     /**
      * Envia um alerta de estoque para o administrador do estabelecimento
      */
-    static async sendLowStockAlert(establishmentId: string, itemName: string, currentStock: number) {
+    static async sendLowStockAlert(companyId: string, itemName: string, currentStock: number) {
         try {
             // Busca no Banco Central
-            const EstablishmentModel = mongoose.connection.model('establishments', Establishment.schema);
+            const CompanyModel = mongoose.connection.model('companys', Company.schema);
             const UserModel = mongoose.connection.model('users', User.schema);
 
-            const establishment: any = await EstablishmentModel.findById(establishmentId).lean();
-            if (!establishment) return;
+            const company: any = await CompanyModel.findById(companyId).lean();
+            if (!company) return;
 
-            const adminUser: any = await UserModel.findById(establishment.user_id).lean();
+            const adminUser: any = await UserModel.findById((await mongoose.connection.model('users').findOne({company_id: company._id, type: 'company_owner'}))?._id).lean();
             if (!adminUser || !adminUser.fcm_token) return;
 
             const message: Message = {
@@ -126,16 +126,16 @@ export class NotificationService {
     /**
      * Envia um push para o dono da adega avisando sobre a expiração de um banner.
      */
-    static async sendBannerExpiryPush(establishmentId: string, bannerId: string) {
+    static async sendBannerExpiryPush(companyId: string, bannerId: string) {
         try {
-            if (!establishmentId) {
+            if (!companyId) {
                 throw new Error('ID do estabelecimento é obrigatório para enviar push de expiração de banner.');
             }
-            const est = await Establishment.findById(establishmentId).lean();
+            const est = await Company.findById(companyId).lean();
             if (!est) return;
 
             // Busca o usuário admin do estabelecimento para pegar o fcm_token
-            const user = await this.getUser(String(est.user_id));
+            const user = await this.getUser(String((await mongoose.connection.model('users').findOne({company_id: est._id, type: 'company_owner'}))?._id));
             if (!user || !user.fcm_token) return;
 
             console.log(`📡 [FCM]: Usando token para ${user.email}: ${user.fcm_token.substring(0, 15)}...`);
@@ -143,7 +143,7 @@ export class NotificationService {
             const message: Message = {
                 notification: {
                     title: 'Banner Expirando! 🧊',
-                    body: `O seu banner do estabelecimento "${est.res_name}" expira em 24h. Renove agora para manter sua visibilidade!`
+                    body: `O seu banner do estabelecimento "${est.name}" expira em 24h. Renove agora para manter sua visibilidade!`
                 },
                 token: String(user.fcm_token),
                 data: {
@@ -163,7 +163,7 @@ export class NotificationService {
                 severity: 'info',
                 details: { banner_id: bannerId, email: user.email },
                 user_id: user._id.toString(),
-                establishment_id: establishmentId
+                company_id: companyId
             });
         } catch (error: any) {
             console.error('❌ Erro ao enviar push de expiração:', error);
@@ -173,7 +173,7 @@ export class NotificationService {
                 module: 'BANNER',
                 severity: 'error',
                 details: { error: error.message, banner_id: bannerId },
-                establishment_id: establishmentId
+                company_id: companyId
             });
         }
     }
@@ -181,13 +181,13 @@ export class NotificationService {
     /**
      * Notifica o lojista sobre falhas críticas na renovação do token de pagamento.
      */
-    static async sendPaymentProviderErrorPush(establishmentId: string, providerName: string) {
+    static async sendPaymentProviderErrorPush(companyId: string, providerName: string) {
         try {
-            const EstablishmentModel = mongoose.connection.model('establishments', Establishment.schema);
-            const establishment: any = await EstablishmentModel.findById(establishmentId).lean();
-            if (!establishment) return;
+            const CompanyModel = mongoose.connection.model('companys', Company.schema);
+            const company: any = await CompanyModel.findById(companyId).lean();
+            if (!company) return;
 
-            const user = await this.getUser(String(establishment.user_id));
+            const user = await this.getUser(String((await mongoose.connection.model('users').findOne({company_id: company._id, type: 'company_owner'}))?._id));
             if (!user || !user.fcm_token) return;
 
             const message: Message = {
@@ -208,8 +208,8 @@ export class NotificationService {
                 action: 'PAYMENT_REFRESH_NOTIFICATION_SENT',
                 module: 'PAYMENT',
                 severity: 'warn',
-                details: { establishmentId, provider: providerName },
-                establishment_id: establishmentId
+                details: { companyId, provider: providerName },
+                company_id: companyId
             });
         } catch (error) {
             console.error('⚠️ [NotificationService]: Erro ao enviar push de falha de pagamento:', error);
@@ -258,7 +258,7 @@ export class NotificationService {
                         <p><strong>Módulo:</strong> ${logDetails.module}</p>
                         <p><strong>Severidade:</strong> ${logDetails.severity.toUpperCase()}</p>
                         <p><strong>Usuário ID:</strong> ${logDetails.user_id || 'N/A'}</p>
-                        <p><strong>Estabelecimento ID:</strong> ${logDetails.establishment_id || 'N/A'}</p>
+                        <p><strong>Estabelecimento ID:</strong> ${logDetails.company_id || 'N/A'}</p>
                         <p><strong>IP:</strong> ${logDetails.ip || 'N/A'}</p>
                         <p><strong>Detalhes:</strong> <pre style="background: #eee; padding: 10px; border-radius: 5px; overflow-x: auto;">${JSON.stringify(logDetails.details, null, 2)}</pre></p>
                         <p><strong>Timestamp:</strong> ${new Date(logDetails.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
@@ -283,25 +283,25 @@ export class NotificationService {
 
     /**
      * Envia uma notificação Push sobre uma fatura em atraso.
-     * @param establishmentId ID do estabelecimento
+     * @param companyId ID do estabelecimento
      * @param amount Valor da fatura
      * @param daysOverdue Quantidade de dias em atraso
      */
-    static async sendInvoiceOverduePush(establishmentId: string, amount: number, daysOverdue: number) {
+    static async sendInvoiceOverduePush(companyId: string, amount: number, daysOverdue: number) {
         try {
-            const EstablishmentModel = mongoose.connection.model('establishments', Establishment.schema);
+            const CompanyModel = mongoose.connection.model('companys', Company.schema);
             const UserModel = mongoose.connection.model('users', User.schema);
 
-            const establishment: any = await EstablishmentModel.findById(establishmentId).lean();
-            if (!establishment) return;
+            const company: any = await CompanyModel.findById(companyId).lean();
+            if (!company) return;
 
-            const adminUser: any = await UserModel.findById(establishment.user_id).lean();
+            const adminUser: any = await UserModel.findById((await mongoose.connection.model('users').findOne({company_id: company._id, type: 'company_owner'}))?._id).lean();
             if (!adminUser || !adminUser.fcm_token) return;
 
             const message: Message = {
                 notification: {
                     title: 'Fatura em Atraso! ⚠️',
-                    body: `A mensalidade de R$ ${amount.toFixed(2)} do seu estabelecimento "${establishment.res_name}" está atrasada há ${daysOverdue} dias. Por favor, regularize para evitar suspensão.`
+                    body: `A mensalidade de R$ ${amount.toFixed(2)} do seu estabelecimento "${company.name}" está atrasada há ${daysOverdue} dias. Por favor, regularize para evitar suspensão.`
                 },
                 data: {
                     type: 'INVOICE_OVERDUE',

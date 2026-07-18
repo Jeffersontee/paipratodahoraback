@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+﻿import { Request, Response, NextFunction } from 'express';
 import SaaSAudit from '../models/Audit.model';
 
 export class AuditController {
@@ -9,7 +9,7 @@ export class AuditController {
         try {
             const perPage = 20;
             const page = parseInt(req.query.page as string) || 1;
-            const { severity, module, establishment_id } = req.query;
+            const { severity, module, company_id } = req.query;
 
             let query: any = {};
             if (!req.user) throw new Error('Acesso negado');
@@ -18,10 +18,10 @@ export class AuditController {
             if (module) query.module = module;
 
             // Se não for super_admin, ele só vê os logs do próprio estabelecimento
-            if (req.user.type === 'establishment_admin') {
-                query.establishment_id = req.user.establishment_id;
-            } else if (establishment_id) {
-                query.establishment_id = establishment_id;
+            if (req.user.type === 'company_owner') {
+                query.company_id = req.user.company_id;
+            } else if (company_id) {
+                query.company_id = company_id;
             }
 
             const count = await SaaSAudit.countDocuments(query);
@@ -30,7 +30,7 @@ export class AuditController {
                 .skip(perPage * page - perPage)
                 .limit(perPage)
                 .populate('user_id', 'name email')
-                .populate('establishment_id', 'res_name')
+                .populate('company_id', 'res_name')
                 .lean();
 
             return res.status(200).json({
@@ -52,8 +52,8 @@ export class AuditController {
             let query: any = { severity: 'critical' };
             if (!req.user) throw new Error('Acesso negado');
             // Respeita o isolamento de dados do lojista
-            if (req.user.type === 'establishment_admin') {
-                query.establishment_id = req.user.establishment_id;
+            if (req.user.type === 'company_owner') {
+                query.company_id = req.user.company_id;
             }
 
             // Busca os 50 logs críticos mais recentes
@@ -61,7 +61,7 @@ export class AuditController {
                 .sort({ created_at: -1 })
                 .limit(50)
                 .populate('user_id', 'name email')
-                .populate('establishment_id', 'res_name')
+                .populate('company_id', 'res_name')
                 .lean();
 
             // Retorna JSON para que o Angular consiga parsear corretamente
@@ -76,24 +76,24 @@ export class AuditController {
      */
     static async exportLogsToCSV(req: Request, res: Response, next: NextFunction) {
         try {
-            const { severity, module, establishment_id } = req.query;
+            const { severity, module, company_id } = req.query;
 
             let query: any = {};
             if (!req.user) throw new Error('Acesso negado');
             if (severity) query.severity = severity;
             if (module) query.module = module;
 
-            if (req.user.type === 'establishment_admin') {
-                query.establishment_id = req.user.establishment_id;
-            } else if (establishment_id) {
-                query.establishment_id = establishment_id;
+            if (req.user.type === 'company_owner') {
+                query.company_id = req.user.company_id;
+            } else if (company_id) {
+                query.company_id = company_id;
             }
 
             // Busca todos os logs filtrados (sem paginação para o export)
             const logs = await SaaSAudit.find(query)
                 .sort({ created_at: -1 })
                 .populate('user_id', 'name email')
-                .populate('establishment_id', 'res_name')
+                .populate('company_id', 'res_name')
                 .lean();
 
             // Definição das colunas e mapeamento dos dados
@@ -104,7 +104,7 @@ export class AuditController {
                 log.action,
                 log.severity,
                 (log.user_id as any)?.email || 'N/A',
-                (log.establishment_id as any)?.res_name || 'Sistema',
+                (log.company_id as any)?.res_name || 'Sistema',
                 log.ip || 'N/A',
                 JSON.stringify(log.details || {}).replace(/"/g, '""') // Escapa aspas para o CSV
             ]);

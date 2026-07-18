@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+﻿import { Request, Response, NextFunction } from 'express';
 import User from '../../models/user.model';
 import { Jwt } from '../../utils/Jwt';
 
@@ -86,7 +86,7 @@ export class AuthMiddleware {
             });
         }
 
-        const allowedTypes = ['admin', 'super_admin', 'establishment_admin', 'staff', 'super_staff'];
+        const allowedTypes = ['admin', 'super_admin', 'company_owner', 'staff', 'super_staff'];
         if (!allowedTypes.includes(user.type)) {
             return res.status(401).json({
                 message: 'Você é um usuário não autorizado',

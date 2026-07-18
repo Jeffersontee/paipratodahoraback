@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+﻿import { Request, Response, NextFunction } from 'express';
 import { Redis } from '../../utils/Redis';
 
 export class SecurityMiddleware {

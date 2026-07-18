@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import Establishment from '../../models/establishment.model';
+﻿import { Request, Response, NextFunction } from 'express';
+import Company from '../../models/company.model';
 import Invoice from '../../models/Invoice.model';
 
 export class SubscriptionMiddleware {
@@ -13,17 +13,17 @@ export class SubscriptionMiddleware {
         if (!user || user.type === 'super_admin' || user.type === 'admin') return next();
         
         try {
-            const establishment = req.establishment; // Carregado previamente pelo resolveTenant
-            if (!establishment) return next();
+            const company = req.company; // Carregado previamente pelo resolveTenant
+            if (!company) return next();
 
             const now = new Date();
 
             // CASO 1: Plano experimental (Trial / status trialing)
-            const isTrial = establishment.subscription_status === 'trialing' || establishment.subscription_status === 'trial';
-            const nextPayment = new Date(establishment.next_payment_date);
+            const isTrial = company.subscription_status === 'trialing' || company.subscription_status === 'trial';
+            const nextPayment = new Date(company.next_payment_date);
 
             if (isTrial && now > nextPayment) {
-                await Establishment.findByIdAndUpdate(establishment._id, { 
+                await Company.findByIdAndUpdate(company._id, { 
                     subscription_status: 'inactive',
                     status: 'inactive'
                 });
@@ -36,7 +36,7 @@ export class SubscriptionMiddleware {
             if (!isTrial) {
                 // Busca todas as faturas não pagas da adega
                 const unpaidInvoices = await Invoice.find({
-                    establishment_id: establishment._id,
+                    company_id: company._id,
                     status: { $in: ['pending', 'overdue'] }
                 }).sort({ due_date: 1 });
 
@@ -60,8 +60,8 @@ export class SubscriptionMiddleware {
                 }
 
                 if (shouldBlock) {
-                    if (establishment.subscription_status !== 'inactive') {
-                        await Establishment.findByIdAndUpdate(establishment._id, { 
+                    if (company.subscription_status !== 'inactive') {
+                        await Company.findByIdAndUpdate(company._id, { 
                             subscription_status: 'inactive',
                             status: 'inactive'
                         });
@@ -72,8 +72,8 @@ export class SubscriptionMiddleware {
             }
 
             // Se o estabelecimento estava inativo mas agora está em dia, reativa automaticamente
-            if (establishment.subscription_status === 'inactive') {
-                await Establishment.findByIdAndUpdate(establishment._id, { 
+            if (company.subscription_status === 'inactive') {
+                await Company.findByIdAndUpdate(company._id, { 
                     subscription_status: 'active',
                     status: 'active'
                 });

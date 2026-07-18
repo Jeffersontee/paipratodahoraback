@@ -2,7 +2,7 @@ import * as mongoose from 'mongoose';
 
 const InvoiceSchema = new mongoose.Schema(
     {
-        establishment_id: { type: mongoose.Schema.Types.ObjectId, ref: 'establishments', required: true },
+        company_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
         subscription_id: { type: mongoose.Schema.Types.ObjectId, ref: 'subscriptions', required: true },
         amount: { type: Number, required: true },
         status: {
@@ -22,7 +22,7 @@ const InvoiceSchema = new mongoose.Schema(
     }
 );
 
-InvoiceSchema.index({ establishment_id: 1, status: 1 });
+InvoiceSchema.index({ company_id: 1, status: 1 });
 InvoiceSchema.index({ created_at: -1 });
 
 export default mongoose.model('invoices', InvoiceSchema);

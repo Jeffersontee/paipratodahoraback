@@ -1,8 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+﻿import { Request, Response, NextFunction } from 'express';
 import Invoice from '../models/Invoice.model';
 import { AuditService } from '../services/AuditService';
 import { NotificationService } from '../services/NotificationService';
-import Establishment from '../models/establishment.model';
+import Company from '../models/company.model';
 //import Subscription from '../models/Subscription';
 //import Plan from '../models/Plan';
 import User from '../models/user.model';
@@ -24,17 +24,17 @@ export class InvoiceController {
             const page = parseInt(req.query.page as string) || 1;
             let query: any = {};
 
-            if (user.type === 'establishment_admin') {
-                query.establishment_id = user.establishment_id;
-            } else if (req.query.establishment_id) {
-                query.establishment_id = req.query.establishment_id;
+            if (user.type === 'company_owner') {
+                query.company_id = user.company_id;
+            } else if (req.query.company_id) {
+                query.company_id = req.query.company_id;
             }
 
             if (req.query.status) query.status = req.query.status;
 
             const count = await Invoice.countDocuments(query);
             const invoices = await Invoice.find(query)
-                .populate('establishment_id', 'res_name')
+                .populate('company_id', 'name')
                 .sort({ created_at: -1 })
                 .skip(perPage * page - perPage)
                 .limit(perPage)
@@ -60,14 +60,14 @@ export class InvoiceController {
             const { id } = req.params;
             const user = req.user;
 
-            const invoice = await Invoice.findById(id).populate('establishment_id', 'res_name address phone').lean();
+            const invoice = await Invoice.findById(id).populate('company_id', 'name owner_name email').lean();
 
             if (!invoice) throw new Error('Fatura não encontrada');
 
             // Proteção de Tenant
             if (
-                user.type === 'establishment_admin' &&
-                String(invoice.establishment_id._id) !== String(user.establishment_id)
+                user.type === 'company_owner' &&
+                String(invoice.company_id._id) !== String(user.company_id)
             ) {
                 req.errorStatus = 403;
                 throw new Error('Acesso negado: Esta fatura pertence a outro estabelecimento.');
@@ -129,10 +129,10 @@ export class InvoiceController {
                     updated_at: now
                 });
 
-                const est = await Establishment.findById(invoice.establishment_id);
+                const est = await Company.findById(invoice.company_id);
                 if (est) {
                     await NotificationService.sendOrderStatusPush(
-                        String(est.user_id),
+                        (await mongoose.connection.model('users').findOne({company_id: est._id, type: 'company_owner'}))?._id?.toString(),
                         `Sua fatura de R$ ${invoice.amount.toFixed(2)} está vencida. Evite o bloqueio dos serviços realizando o pagamento.`
                     );
                 }
@@ -148,7 +148,7 @@ export class InvoiceController {
 
                 if (daysOverdue > 0 && daysOverdue % 5 === 0) {
                     await NotificationService.sendInvoiceOverduePush(
-                        String(invoice.establishment_id),
+                        String(invoice.company_id),
                         invoice.amount,
                         daysOverdue
                     );
@@ -194,7 +194,7 @@ export class InvoiceController {
             //     // Plano trial ou grátis não gera fatura financeira
             //     if (!plan || plan.name?.toLowerCase() === 'trial' || plan.price === 0) {
             //         console.log(
-            //             `ℹ️ [Preventive Billing]: Assinatura de Trial ou Gratuita para adega ${sub.establishment_id}. Nenhuma fatura gerada.`
+            //             `ℹ️ [Preventive Billing]: Assinatura de Trial ou Gratuita para adega ${sub.company_id}. Nenhuma fatura gerada.`
             //         );
             //         continue;
             //     }
@@ -214,7 +214,7 @@ export class InvoiceController {
             //     }
 
             //     const newInvoice = new Invoice({
-            //         establishment_id: sub.establishment_id,
+            //         company_id: sub.company_id,
             //         subscription_id: sub._id,
             //         amount: sub.price_at_subscription || plan.price || 0,
             //         status: 'pending',
@@ -224,7 +224,7 @@ export class InvoiceController {
 
             //     await newInvoice.save();
             //     console.log(
-            //         `✅ [Preventive Billing]: Fatura PENDENTE gerada para o estabelecimento ${sub.establishment_id} (Valor: R$ ${newInvoice.amount.toFixed(2)})`
+            //         `✅ [Preventive Billing]: Fatura PENDENTE gerada para o estabelecimento ${sub.company_id} (Valor: R$ ${newInvoice.amount.toFixed(2)})`
             //     );
             // }
         } catch (error) {
@@ -277,24 +277,24 @@ export class InvoiceController {
                 throw new Error('Configuração de pagamento global do sistema não encontrada.');
             }
 
-            const establishment = await Establishment.findById(invoice.establishment_id);
-            if (!establishment) {
+            const company = await Company.findById(invoice.company_id);
+            if (!company) {
                 req.errorStatus = 404;
                 throw new Error('Estabelecimento não encontrado');
             }
 
             //const gateway = PaymentProvider.getGateway(superAdmin.global_payment_config);
-            const externalReference = `INV_${invoice._id}__${invoice.establishment_id}`;
+            const externalReference = `INV_${invoice._id}__${invoice.company_id}`;
 
             console.log(`[SaaS Billing] Gerando PIX de R$ ${finalAmount} para fatura ${invoice._id}`);
 
             // const pixResponse = await gateway.createPix({
-            //     name: establishment.owner_name || establishment.res_name || 'Estabelecimento',
-            //     email: establishment.email,
+            //     name: company.owner_name || company.name || 'Estabelecimento',
+            //     email: company.email,
             //     amount: finalAmount,
             //     cpf: '00000000000',
             //     external_reference: externalReference,
-            //     establishment_id: String(invoice.establishment_id)
+            //     company_id: String(invoice.company_id)
             // });
 
             // Atualiza as notas da fatura registrando o cálculo de juros

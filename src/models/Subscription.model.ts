@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const SubscriptionSchema = new mongoose.Schema(
     {
-        establishment_id: { type: mongoose.Schema.Types.ObjectId, ref: 'establishments', required: true },
-        plan_id: { type: mongoose.Schema.Types.ObjectId, ref: 'plans', required: true },
+        company_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
+        plan_id: { type: mongoose.Schema.Types.ObjectId, ref: 'plans', required: false },
         status: {
             type: String,
             enum: ['active', 'past_due', 'canceled', 'trialing'],
@@ -35,6 +35,6 @@ const SubscriptionSchema = new mongoose.Schema(
     }
 );
 
-SubscriptionSchema.index({ establishment_id: 1, status: 1 });
+SubscriptionSchema.index({ company_id: 1, status: 1 });
 
 export default mongoose.model('subscriptions', SubscriptionSchema);

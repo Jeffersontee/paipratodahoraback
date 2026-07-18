@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+﻿import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 const Item = { schema: new mongoose.Schema({}, { strict: false }) };
 const Product = { schema: new mongoose.Schema({}, { strict: false }) };
@@ -29,13 +29,13 @@ export class PermissionMiddleware {
                 return next(new Error('Item não encontrado.'));
             }
 
-            if (!user.establishment_id) {
+            if (!user.company_id) {
                 req.errorStatus = 403;
                 return next(new Error('Acesso negado: Seu usuário não possui um estabelecimento vinculado.'));
             }
 
             // Verificamos se o estabelecimento do item é o mesmo do admin logado
-            if (item.establishment_id.toString() !== user.establishment_id.toString()) {
+            if (item.company_id.toString() !== user.company_id.toString()) {
                 req.errorStatus = 403;
                 return next(new Error('Acesso negado: Este produto pertence a outra adega.'));
             }
@@ -66,7 +66,7 @@ export class PermissionMiddleware {
                 return next(new Error('Produto não encontrado.'));
             }
 
-            if (!user.establishment_id || product.establishment_id.toString() !== user.establishment_id.toString()) {
+            if (!user.company_id || product.company_id.toString() !== user.company_id.toString()) {
                 req.errorStatus = 403;
                 return next(new Error('Acesso negado: Este produto pertence a outra adega.'));
             }
@@ -74,13 +74,13 @@ export class PermissionMiddleware {
         } catch (e: any) { next(e); }
     }
 
-    static canCreateForEstablishment(req: Request, res: Response, next: NextFunction) {
+    static canCreateForCompany(req: Request, res: Response, next: NextFunction) {
         const user = req.user;
         if (!user) {
             req.errorStatus = 401;
             return next(new Error('Usuário não autenticado.'));
         }
-        const body_establishment_id = req.body.establishment_id;
+        const body_company_id = req.body.company_id;
 
         // Normalização de campos booleanos (evita CastError do Mongoose se vier string vazia do frontend)
         if (req.body && 'status' in req.body && req.body.status !== undefined) {
@@ -93,20 +93,20 @@ export class PermissionMiddleware {
         }
 
         if (user.type === 'super_admin') {
-            if (!body_establishment_id) {
+            if (!body_company_id) {
                 req.errorStatus = 400;
-                return next(new Error('Para Super Admin, o campo establishment_id é obrigatório no corpo da requisição.'));
+                return next(new Error('Para Super Admin, o campo company_id é obrigatório no corpo da requisição.'));
             }
             return next();
         }
 
-        if (user.type === 'establishment_admin') {
-            if (!user.establishment_id) {
+        if (user.type === 'company_owner') {
+            if (!user.company_id) {
                 req.errorStatus = 403;
                 return next(new Error('Acesso negado: Seu usuário não possui um estabelecimento vinculado.'));
             }
 
-            req.body.establishment_id = user.establishment_id.toString();
+            req.body.company_id = user.company_id.toString();
             return next();
         }
 
@@ -136,12 +136,12 @@ export class PermissionMiddleware {
                 return next(new Error('Banner não encontrado.'));
             }
 
-            if (!user.establishment_id) {
+            if (!user.company_id) {
                 req.errorStatus = 403;
                 return next(new Error('Acesso negado: Seu usuário não possui um estabelecimento vinculado.'));
             }
 
-            if (!banner.establishment_id || banner.establishment_id.toString() !== user.establishment_id.toString()) {
+            if (!banner.company_id || banner.company_id.toString() !== user.company_id.toString()) {
                 req.errorStatus = 403;
                 return next(new Error('Acesso negado: Este banner pertence a outra adega.'));
             }

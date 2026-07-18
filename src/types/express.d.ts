@@ -1,4 +1,4 @@
-import { Request } from 'express';
+﻿import { Request } from 'express';
 
 declare global {
   namespace Express {
@@ -6,7 +6,7 @@ declare global {
       user?: any;
       errorStatus?: number;
       db?: any;
-      establishment?: any;
+      company?: any;
     }
   }
 }

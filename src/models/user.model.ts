@@ -15,7 +15,6 @@ export interface IUserDocument extends Document {
   photo?: string;
   reset_password_token?: string;
   reset_password_token_time?: number | Date;
-  establishment_id?: Types.ObjectId;
   company_id?: Types.ObjectId;
   role?: string;
   permissions?: string[];
@@ -45,7 +44,6 @@ const UserSchema = new Schema<IUserDocument>(
     photo: { type: String, required: false },
     reset_password_token: { type: String, required: false },
     reset_password_token_time: { type: Schema.Types.Mixed, required: false },
-    establishment_id: { type: Schema.Types.ObjectId, ref: 'Establishment', required: false, default: null },
     company_id: { type: Schema.Types.ObjectId, ref: 'Company', required: false, default: null },
     role: { type: String, required: false },
     permissions: [{ type: String }],

@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import Establishment from '../models/establishment.model';
+﻿import { Request, Response, NextFunction } from 'express';
+import Company from '../models/company.model';
 import Audit from '../models/Audit.model';
 import User from '../models/user.model';
 

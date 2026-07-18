@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 //import { MercadoPagoConfig, OAuth } from 'mercadopago'; // Keep MercadoPagoConfig for type, but use MercadoPago.getPlatformClient()
 //import { MercadoPago } from '../services/integrations/MercadoPago'; // Import MercadoPago class
-import Establishment from '../models/establishment.model';
+import Company from '../models/company.model';
 import { Utils } from '../utils/Utils';
 import { NotificationService } from '../services/NotificationService';
 import User from '../models/user.model';
 //import PaymentHistory from '../models/PaymentHistory';
+import mongoose from 'mongoose';
 
 export class PaymentOnboardingController {
     /**
@@ -26,8 +27,8 @@ export class PaymentOnboardingController {
 
             if (user.type === 'super_admin') {
                 state = 'PLATFORM'; // Identificador único para a conta da plataforma
-            } else if (user.establishment_id) {
-                state = String(user.establishment_id);
+            } else if (user.company_id) {
+                state = String(user.company_id);
             } else {
                 req.errorStatus = 400;
                 throw new Error('Usuário não possui um estabelecimento vinculado para iniciar o onboarding.');
@@ -228,7 +229,7 @@ export class PaymentOnboardingController {
             //     console.log('✅ [OAuth] Conta da PLATAFORMA conectada com sucesso.');
             // } else {
             //     // Se for um lojista, salvamos no documento da adega
-            //     await Establishment.findByIdAndUpdate(state, {
+            //     await Company.findByIdAndUpdate(state, {
             //         $set: {
             //             'payment_config.mercado_pago': paymentConfig,
             //             gateway_provider: 'mercado_pago'
@@ -240,7 +241,7 @@ export class PaymentOnboardingController {
 
             // REGISTRO NO HISTÓRICO: Persiste a conexão bem-sucedida
             // await PaymentHistory.create({
-            //     establishment_id: state !== 'PLATFORM' ? state : null,
+            //     company_id: state !== 'PLATFORM' ? state : null,
             //     user_id: state === 'PLATFORM' ? (await User.findOne({ type: 'super_admin' }))?._id : null,
             //     gateway: 'mercado_pago',
             //     status: 'connected',
@@ -260,7 +261,7 @@ export class PaymentOnboardingController {
             }
 
             const redirectPath =
-                state === 'PLATFORM' ? '/super-admin/payment-gateway' : '/establishment-admin/payment-gateway';
+                state === 'PLATFORM' ? '/super-admin/payment-gateway' : '/company-admin/payment-gateway';
             console.log(`🚀 [OAuth Success] Redirecionando para o Frontend: ${frontendBase}${redirectPath}`);
 
             return res.redirect(`${frontendBase}${redirectPath}?status=success&gateway=mercado_pago`);
@@ -275,7 +276,7 @@ export class PaymentOnboardingController {
 
             // REGISTRO NO HISTÓRICO: Persiste a falha de conexão
             // await PaymentHistory.create({
-            //     establishment_id: req.query.state !== 'PLATFORM' ? req.query.state : null,
+            //     company_id: req.query.state !== 'PLATFORM' ? req.query.state : null,
             //     gateway: 'mercado_pago',
             //     status: 'error',
             //     message: `Falha na autorização OAuth: ${errorMessage}`
@@ -296,13 +297,13 @@ export class PaymentOnboardingController {
             console.log('📅 [CRON]: Verificando expiração de assinaturas...');
 
             // Busca estabelecimentos ativos/trial que já passaram da data de pagamento
-            const expired = await Establishment.find({
+            const expired = await Company.find({
                 subscription_status: { $in: ['active', 'trial'] },
                 next_payment_date: { $lt: now }
             });
 
             for (const est of expired) {
-                await Establishment.findByIdAndUpdate(est._id, {
+                await Company.findByIdAndUpdate(est._id, {
                     subscription_status: 'inactive',
                     status: 'inactive', // Opcional: desativa a loja pública também
                     updated_at: now
@@ -310,7 +311,7 @@ export class PaymentOnboardingController {
 
                 // Notifica o lojista via Push/E-mail sobre a interrupção do serviço
                 await NotificationService.sendOrderStatusPush(
-                    String(est.user_id),
+                    (await mongoose.connection.model('users').findOne({company_id: est._id, type: 'company_owner'}))?._id?.toString(),
                     'Sua assinatura expirou. Regularize o pagamento para reativar seu painel.'
                 );
             }
@@ -331,7 +332,7 @@ export class PaymentOnboardingController {
             console.log('🔄 [CRON]: Iniciando verificação de expiração de tokens Mercado Pago...');
 
             // 1. Busca estabelecimentos que possuem refresh_token criptografado e usam Mercado Pago
-            const establishments = await Establishment.find({
+            const companys = await Company.find({
                 'payment_config.mercado_pago.refresh_token.encrypted': { $exists: true },
                 gateway_provider: 'mercado_pago'
             });
@@ -339,7 +340,7 @@ export class PaymentOnboardingController {
             const now = new Date();
             let refreshCount = 0;
 
-            for (const est of establishments) {
+            for (const est of companys) {
                 const mpData = (est as any).payment_config?.mercado_pago;
 
                 // Se não houver dados de autorização ou expiração, ignoramos
@@ -355,7 +356,7 @@ export class PaymentOnboardingController {
 
                 // Se o momento atual já entrou na janela de 30 dias antes da expiração
                 if (now >= refreshThreshold) {
-                    console.log(`📡 [OAuth Refresh]: Renovando token para adega: ${est.res_name}`);
+                    console.log(`📡 [OAuth Refresh]: Renovando token para adega: ${est.name}`);
                     await this.refreshMPToken(est);
                     refreshCount++;
                 }
@@ -369,10 +370,10 @@ export class PaymentOnboardingController {
 
     /**
      * Realiza a renovação de um Access Token expirado ou próximo da expiração.
-     * @param establishment Instância do estabelecimento vinda do banco central.
+     * @param company Instância do estabelecimento vinda do banco central.
      */
-    static async refreshMPToken(establishment: any) {
-        const mpData = establishment.payment_config?.mercado_pago;
+    static async refreshMPToken(company: any) {
+        const mpData = company.payment_config?.mercado_pago;
         if (!mpData?.refresh_token?.encrypted) return;
 
         try {
@@ -399,7 +400,7 @@ export class PaymentOnboardingController {
             // }
 
             // // 3. Atualiza o banco central com os novos tokens criptografados
-            // await Establishment.findByIdAndUpdate(establishment._id, {
+            // await Company.findByIdAndUpdate(company._id, {
             //     $set: {
             //         'payment_config.mercado_pago.accessToken': Utils.encryptOAuthToken(credentials.access_token),
             //         'payment_config.mercado_pago.refresh_token': Utils.encryptOAuthToken(credentials.refresh_token),
@@ -410,18 +411,18 @@ export class PaymentOnboardingController {
             // });
         } catch (error) {
             // Incrementa o contador de falhas
-            const updated: any = await Establishment.findByIdAndUpdate(
-                establishment._id,
+            const updated: any = await Company.findByIdAndUpdate(
+                company._id,
                 { $inc: { 'payment_config.mercado_pago.refresh_fail_count': 1 } },
                 { new: true }
             );
 
             const failCount = updated?.payment_config?.mercado_pago?.refresh_fail_count || 0;
-            console.error(`❌ [MP TOKEN REFRESH ERROR] Adega: ${establishment.res_name} (Falha ${failCount}):`, error);
+            console.error(`❌ [MP TOKEN REFRESH ERROR] Adega: ${company.name} (Falha ${failCount}):`, error);
 
             // Se falhar 3 vezes (3 dias seguidos na cron), notifica o lojista
             if (failCount === 3) {
-                await NotificationService.sendPaymentProviderErrorPush(String(establishment._id), 'Mercado Pago');
+                await NotificationService.sendPaymentProviderErrorPush(String(company._id), 'Mercado Pago');
             }
 
             throw error;
@@ -447,12 +448,12 @@ export class PaymentOnboardingController {
                 const superUser: any = await User.findById(user.aud).select('global_payment_config');
                 mpData = superUser?.global_payment_config?.mercado_pago;
             } else {
-                const establishment: any = await Establishment.findById(user.establishment_id).select('payment_config');
-                if (!establishment) {
+                const company: any = await Company.findById(user.company_id).select('payment_config');
+                if (!company) {
                     req.errorStatus = 404;
                     throw new Error('Estabelecimento não encontrado.');
                 }
-                mpData = establishment.payment_config?.mercado_pago;
+                mpData = company.payment_config?.mercado_pago;
             }
 
             // Lógica de determinação de status para o Front-end
@@ -502,15 +503,15 @@ export class PaymentOnboardingController {
                 paymentConfig = superUser?.global_payment_config;
                 if (superUser?.gateway_provider) activeGateway = superUser.gateway_provider;
             } else {
-                const establishment: any = await Establishment.findById(user.establishment_id)
+                const company: any = await Company.findById(user.company_id)
                     .select('payment_config gateway_provider')
                     .lean();
-                if (!establishment) {
+                if (!company) {
                     req.errorStatus = 404;
                     throw new Error('Estabelecimento não encontrado.');
                 }
-                paymentConfig = establishment.payment_config;
-                if (establishment.gateway_provider) activeGateway = establishment.gateway_provider;
+                paymentConfig = company.payment_config;
+                if (company.gateway_provider) activeGateway = company.gateway_provider;
             }
 
             const response = {
@@ -615,7 +616,7 @@ export class PaymentOnboardingController {
             if (user.type === 'super_admin') {
                 query.user_id = user.aud;
             } else {
-                query.establishment_id = user.establishment_id;
+                query.company_id = user.company_id;
             }
 
             if (status && status !== 'all') query.status = status;

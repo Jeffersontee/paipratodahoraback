@@ -1,10 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
+﻿import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 const Product = { schema: new mongoose.Schema({}, { strict: false }) };
 const Item = { schema: new mongoose.Schema({}, { strict: false }) };
 const Category = { schema: new mongoose.Schema({}, { strict: false }) };
 import Banner from '../../models/banner.model';
-import Establishment from '../../models/establishment.model';
+import Company from '../../models/company.model';
 import User from '../../models/user.model';
 
 export class LimitMiddleware {
@@ -14,10 +14,10 @@ export class LimitMiddleware {
             req.errorStatus = 401;
             return next(new Error('Usuário não autenticado.'));
         }
-        const establishmentId = req.body.establishment_id || user.establishment_id;
+        const companyId = req.body.company_id || user.company_id;
         
         return LimitMiddleware.verifyLimit(req, res, next, {
-            establishmentId,
+            companyId,
             modelName: 'products',
             schema: Product.schema,
             limitKey: 'max_items',
@@ -32,10 +32,10 @@ export class LimitMiddleware {
             req.errorStatus = 401;
             return next(new Error('Usuário não autenticado.'));
         }
-        const establishmentId = req.body.establishment_id || user.establishment_id;
+        const companyId = req.body.company_id || user.company_id;
         
         return LimitMiddleware.verifyLimit(req, res, next, {
-            establishmentId,
+            companyId,
             modelName: 'items',
             schema: Item.schema,
             limitKey: 'max_items',
@@ -52,16 +52,16 @@ export class LimitMiddleware {
             return next(new Error('Usuário não autenticado.'));
         }
 
-        const establishmentId = req.body.establishment_id || user.establishment_id;
+        const companyId = req.body.company_id || user.company_id;
 
         if (user && user.type === 'super_admin') return next();
 
         try {
-            const establishment: any = await Establishment.findById(String(establishmentId))
+            const company: any = await Company.findById(String(companyId))
                 .populate({ path: 'subscription_id', populate: { path: 'plan_id' }, strictPopulate: false });
 
-            const currentCount = await User.countDocuments({ establishment_id: establishmentId });
-            const limit = establishment?.subscription_id?.plan_id?.max_users || 1;
+            const currentCount = await User.countDocuments({ company_id: companyId });
+            const limit = company?.subscription_id?.plan_id?.max_users || 1;
 
             if (currentCount >= limit) {
                 req.errorStatus = 403;
@@ -80,10 +80,10 @@ export class LimitMiddleware {
             req.errorStatus = 401;
             return next(new Error('Usuário não autenticado.'));
         }
-        const establishmentId = req.body.establishment_id || user.establishment_id;
+        const companyId = req.body.company_id || user.company_id;
         
         return LimitMiddleware.verifyLimit(req, res, next, {
-            establishmentId,
+            companyId,
             modelName: 'categories',
             schema: Category.schema,
             limitKey: 'max_categories',
@@ -98,24 +98,24 @@ export class LimitMiddleware {
             req.errorStatus = 401;
             return next(new Error('Usuário não autenticado.'));
         }
-        const establishmentId = req.body.establishment_id || user.establishment_id;
-        if (!establishmentId) return next(new Error('ID do estabelecimento é obrigatório'));
+        const companyId = req.body.company_id || user.company_id;
+        if (!companyId) return next(new Error('ID do estabelecimento é obrigatório'));
 
         if (user.type === 'super_admin') return next();
 
         try {
-            const establishment: any = await Establishment.findById(String(establishmentId))
+            const company: any = await Company.findById(String(companyId))
                 .populate({ path: 'subscription_id', populate: { path: 'plan_id' }, strictPopulate: false });
 
-            const maxAllowed = establishment?.subscription_id?.plan_id?.max_banners || 5;
-            const planName = establishment?.subscription_id?.plan_id?.name?.toUpperCase() || 'DESCONHECIDO';
+            const maxAllowed = company?.subscription_id?.plan_id?.max_banners || 5;
+            const planName = company?.subscription_id?.plan_id?.name?.toUpperCase() || 'DESCONHECIDO';
 
             const now = new Date();
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
             const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
             const monthlyCount = await Banner.countDocuments({
-                establishment_id: establishmentId,
+                company_id: companyId,
                 created_at: { $gte: startOfMonth, $lte: endOfMonth }
             });
 
@@ -141,20 +141,20 @@ export class LimitMiddleware {
             return next(new Error('Usuário não autenticado.'));
         }
 
-        const establishmentId = req.body.establishment_id || user.establishment_id;
+        const companyId = req.body.company_id || user.company_id;
         const isGlobal = req.body.is_global === 'true' || req.body.is_global === true;
 
         if (user.type === 'super_admin' || !isGlobal) return next();
 
         try {
-            const establishment: any = await Establishment.findById(String(establishmentId))
+            const company: any = await Company.findById(String(companyId))
                 .populate({ path: 'subscription_id', populate: { path: 'plan_id' }, strictPopulate: false });
 
-            const planName = establishment?.subscription_id?.plan_id?.name?.toLowerCase();
+            const planName = company?.subscription_id?.plan_id?.name?.toLowerCase();
 
             if (planName === 'premium') {
                 const activeGlobalCount = await Banner.countDocuments({
-                    establishment_id: establishmentId,
+                    company_id: companyId,
                     is_global: true,
                     status: true,
                     expires_at: { $gt: new Date() }
@@ -172,28 +172,28 @@ export class LimitMiddleware {
     }
 
     private static async verifyLimit(req: Request, res: Response, next: NextFunction, config: {
-        establishmentId: any, modelName: string, schema: any, limitKey: string, defaultLimit: number, errorMessage: string
+        companyId: any, modelName: string, schema: any, limitKey: string, defaultLimit: number, errorMessage: string
     }) {
         const user = req.user;
         if (user && user.type === 'super_admin') return next();
         
-        let establishmentObjectId: mongoose.Types.ObjectId | undefined;
-        if (config.establishmentId && mongoose.Types.ObjectId.isValid(String(config.establishmentId))) {
-            establishmentObjectId = new mongoose.Types.ObjectId(String(config.establishmentId));
+        let companyObjectId: mongoose.Types.ObjectId | undefined;
+        if (config.companyId && mongoose.Types.ObjectId.isValid(String(config.companyId))) {
+            companyObjectId = new mongoose.Types.ObjectId(String(config.companyId));
         }
 
-        if (!establishmentObjectId) {
+        if (!companyObjectId) {
             return next(new Error('ID do estabelecimento é obrigatório para verificar limites.'));
         }
 
         try {
-            const establishment: any = await Establishment.findById(String(config.establishmentId))
+            const company: any = await Company.findById(String(config.companyId))
                 .populate({ path: 'subscription_id', populate: { path: 'plan_id' }, strictPopulate: false });
 
             const Model = config.modelName === 'banners' ? Banner : req.db!.model(config.modelName, config.schema);
-            const currentCount = await Model.countDocuments({ establishment_id: establishmentObjectId });
+            const currentCount = await Model.countDocuments({ company_id: companyObjectId });
 
-            const limit = establishment?.subscription_id?.plan_id?.[config.limitKey] || config.defaultLimit;
+            const limit = company?.subscription_id?.plan_id?.[config.limitKey] || config.defaultLimit;
 
             if (currentCount >= limit) {
                 req.errorStatus = 403;

@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+﻿import { Types } from 'mongoose';
 
 export interface IUser {
     _id: any; // Aceita string ou ObjectId sem conflitos de propriedades internas
@@ -6,9 +6,9 @@ export interface IUser {
     aud?: string; // Adicionado para refletir o payload do JWT
     name: string;
     phone: string;
-    type: 'super_admin' | 'establishment_admin' | 'admin' | 'user' | 'staff' | 'super_staff';
+    type: 'super_admin' | 'company_owner' | 'admin' | 'user' | 'staff' | 'super_staff';
     status: string;
-    establishment_id?: any; // Facilita a atribuição vinda do banco ou tokens
+    company_id?: any; // Facilita a atribuição vinda do banco ou tokens
     cpf?: string | null;
     photo?: string | null;
     email_verified?: boolean;

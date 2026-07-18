@@ -3,7 +3,7 @@ import { model } from 'mongoose';
 
 const bannerSchema = new mongoose.Schema({
     banner: { type: String, required: true },
-    establishment_id: { type: mongoose.Types.ObjectId, ref: 'establishments', required: false },
+    company_id: { type: mongoose.Types.ObjectId, ref: 'Company', required: false },
     city_id: { type: mongoose.Types.ObjectId, ref: 'cities', required: false },
     is_global: { type: Boolean, default: false },
     radius: { type: Number, default: 5 },

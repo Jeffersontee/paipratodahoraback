@@ -2,7 +2,7 @@ import * as mongoose from 'mongoose';
 
 const AuditSchema = new mongoose.Schema({
     user_id: { type: mongoose.Types.ObjectId, ref: 'users' },
-    establishment_id: { type: mongoose.Types.ObjectId, ref: 'establishments' },
+    company_id: { type: mongoose.Types.ObjectId, ref: 'Company' },
     action: { type: String, required: true }, // Ex: 'PAYMENT_ERROR', 'WEBHOOK_FAILED'
     module: { type: String, required: true }, // Ex: 'PAYMENT', 'ORDER', 'AUTH', 'SECURITY'
     severity: { type: String, enum: ['info', 'warn', 'error', 'critical'], default: 'info' },

@@ -4,7 +4,7 @@ import { model } from 'mongoose';
 const globalOrderSchema = new mongoose.Schema(
     {
         customer_id: { type: mongoose.Types.ObjectId, ref: 'users', required: true },
-        establishment_id: { type: mongoose.Types.ObjectId, ref: 'establishments', required: true },
+        company_id: { type: mongoose.Types.ObjectId, ref: 'Company', required: true },
         tenant_order_id: { type: mongoose.Types.ObjectId, required: true }, // ID original no banco isolado
         items: { type: Array, required: true }, // Itens denormalizados para Analytics Global (IOrderItem[])
         status: { type: String, required: true },

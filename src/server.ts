@@ -1,4 +1,4 @@
-import { Utils } from './utils/Utils';
+﻿import { Utils } from './utils/Utils';
 import express from 'express';
 import { initializeApp, getApps, cert } from 'firebase-admin/app'; // 1. Importe o SDK
 import mongoose from 'mongoose';
@@ -10,7 +10,7 @@ import UserRouter from './routers/UserRouter';
 // import BannerRouter from './routers/BannerRouter';
 import { CronService } from './services/CronService';
 // import CityRouter from './routers/CityRouter';
-// import EstablishmentRouter from './routers/EstablishmentRouter';
+// import CompanyRouter from './routers/CompanyRouter';
 // import CategoryRouter from './routers/CategoryRouter';
 // import ItemRouter from './routers/ItemRouter';
 // import TypeSizeRouter from './routers/TypeSizeRouter';
@@ -202,7 +202,7 @@ export class Server {
                     }
                 },
                 methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-                allowedHeaders: ['Content-Type', 'Authorization', 'x-establishment-id'],
+                allowedHeaders: ['Content-Type', 'Authorization', 'x-company-id'],
                 credentials: true
             })
         );
@@ -232,7 +232,7 @@ export class Server {
         // this.app.use('/api/staff', StaffRouter);
         // this.app.use('/api/banners', BannerRouter);
         // this.app.use('/api/cities', CityRouter);
-        // this.app.use('/api/establishments', EstablishmentRouter);
+        // this.app.use('/api/companys', CompanyRouter);
         // this.app.use('/api/categories', CategoryRouter);
         // this.app.use('/api/items', ItemRouter);
         // this.app.use('/api/type-sizes', TypeSizeRouter);
