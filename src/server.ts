@@ -287,7 +287,8 @@ export class Server {
                 return next(error);
             }
 
-            const errorStatus = (req as any).errorStatus || 500;
+            const errorStatus =
+                (req as any).errorStatus || error.status_code || (error && error.status) || error.statusCode || 500;
             res.status(errorStatus).json({
                 message: error.message || 'Something went wrong. Please try again!',
                 status_code: errorStatus

@@ -83,10 +83,32 @@ export class CompanyController {
 
     static async update(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, owner_name, short_name, description, cnpj, email, active } = req.body;
+            const { name, owner_name, short_name, description, cnpj, email, active, services } = req.body;
             const company = await Company.findByIdAndUpdate(
                 req.params.id,
-                { name, owner_name, short_name, description, cnpj, email, active },
+                { name, owner_name, short_name, description, cnpj, email, active, services },
+                { new: true, runValidators: true }
+            );
+
+            if (!company) {
+                return res.status(404).json({ success: false, message: 'Company not found' });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: company
+            });
+        } catch (e: any) {
+            next(e);
+        }
+    }
+
+    static async updateServices(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { services } = req.body;
+            const company = await Company.findByIdAndUpdate(
+                req.params.id,
+                { services },
                 { new: true, runValidators: true }
             );
 

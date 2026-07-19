@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { CollaboratorValidator } from '../validators/CollaboratorValidator';
 import { CollaboratorController } from '../controllers/CollaboratorController';
 
 class CollaboratorRouter {

@@ -11,6 +11,7 @@ export interface ICompany {
     subscription_status?: string;
     next_payment_date?: Date;
     subscription_id?: any;
+    services?: any[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -28,7 +29,8 @@ const CompanySchema = new Schema<ICompanyDocument>(
         active: { type: Boolean, default: true },
         subscription_status: { type: String, default: 'active' }, // trial, active, inactive, canceled
         next_payment_date: { type: Date, required: false },
-        subscription_id: { type: Schema.Types.ObjectId, ref: 'subscriptions', required: false }
+        subscription_id: { type: Schema.Types.ObjectId, ref: 'subscriptions', required: false },
+        services: [{ type: Schema.Types.ObjectId, ref: 'Service', default: [] }]
     },
     {
         timestamps: true

@@ -33,12 +33,13 @@ export class ServiceOrderController {
     static async create(req: Request, res: Response, next: NextFunction) {
         try {
             const { company_id, unit_id, service_id, collaborator_id, scheduled_date, notes } = req.body;
+            const cleanCollaboratorId = (collaborator_id === "" || collaborator_id === "null" || collaborator_id === null) ? null : collaborator_id;
             
             const order = new ServiceOrder({
                 company_id,
                 unit_id,
                 service_id,
-                collaborator_id,
+                collaborator_id: cleanCollaboratorId,
                 scheduled_date,
                 current_status: 'AGENDADO',
                 timeline: [{
@@ -118,6 +119,10 @@ export class ServiceOrderController {
             const updateData = req.body;
             // Prevent overriding critical fields directly via generic update
             delete updateData.timeline;
+
+            if (updateData.collaborator_id === '' || updateData.collaborator_id === 'null' || !updateData.collaborator_id) {
+                updateData.collaborator_id = null;
+            }
             
             const order = await ServiceOrder.findByIdAndUpdate(
                 req.params.id,

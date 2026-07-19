@@ -16,18 +16,17 @@ const fileFilter = (req: any, file: any, cb: any) => {
 };
 
 export class Utils {
-
-    public MAX_TOKEN_TIME = (5 * 60 * 1000);
-    public multer = Multer({storage: storageOptions, fileFilter: fileFilter});
+    public MAX_TOKEN_TIME = 5 * 60 * 1000;
+    public multer = Multer({ storage: storageOptions, fileFilter: fileFilter });
 
     static generateVerificationToken(digit: number = 6) {
         const digits = '0123456789';
         let otp = '';
-        for(let i = 0; i < digit; i++) {
+        for (let i = 0; i < digit; i++) {
             otp += Math.floor(Math.random() * 10);
         }
         // return parseInt(otp);
-        return otp; 
+        return otp;
     }
 
     // static encryptPassword(password) {
@@ -41,7 +40,7 @@ export class Utils {
     //         });
     //     });
     // }
-    
+
     static encryptPassword(password: string): Promise<string> {
         if (!password || typeof password !== 'string') {
             return Promise.reject(new Error('A senha deve ser uma sequência de caracteres não vazia'));
@@ -58,13 +57,15 @@ export class Utils {
         });
     }
 
-    static comparePassword(data: { password: string, encrypt_password: string}): Promise<any> {
+    static comparePassword(data: { password: string; encrypt_password: string }): Promise<any> {
         return new Promise((resolve, reject) => {
             Bcrypt.compare(data.password, data.encrypt_password, (err, same) => {
-                if(err) {
+                if (err) {
                     reject(err);
-                } else if(!same) {
-                    reject(new Error('Usuário e senha não coincidem'));
+                } else if (!same) {
+                    const e: any = new Error('Usuário e senha não coincidem');
+                    e.status_code = 401;
+                    reject(e);
                 } else {
                     resolve(true);
                 }
@@ -95,20 +96,20 @@ export class Utils {
             `${prefix}OAUTH_ENCRYPTION_KEY`
         ];
 
-        const missing = requiredVars.filter(v => !process.env[v]);
+        const missing = requiredVars.filter((v) => !process.env[v]);
 
         // Se não houver a variável com prefixo, verifica se a variável base (sem prefixo) existe (padrão Heroku)
-        const actuallyMissing = missing.filter(v => !process.env[v.replace(prefix, '')]);
+        const actuallyMissing = missing.filter((v) => !process.env[v.replace(prefix, '')]);
 
         if (actuallyMissing.length > 0) {
             console.error('\n❌ [ERRO CRÍTICO DE AMBIENTE]:');
-            console.error(`O servidor não pode iniciar no modo [${env.toUpperCase()}] pois as seguintes variáveis estão ausentes no .env:`);
-            actuallyMissing.forEach(v => console.error(`   - ${v}`));
+            console.error(
+                `O servidor não pode iniciar no modo [${env.toUpperCase()}] pois as seguintes variáveis estão ausentes no .env:`
+            );
+            actuallyMissing.forEach((v) => console.error(`   - ${v}`));
             console.error('\nVerifique seu arquivo .env ou as Config Vars do Heroku.\n');
             process.exit(1); // Encerra a aplicação imediatamente
         }
-
-
 
         console.log('✅ [ENV]: Variáveis de ambiente carregadas com sucesso.');
     }
@@ -131,14 +132,14 @@ export class Utils {
      */
     static getPublicIdFromUrl(url: string): string | null {
         if (!url || !url.includes('cloudinary')) return null;
-        
+
         try {
             const urlParts = url.split('/');
             // O Cloudinary geralmente organiza como: .../upload/v12345/pasta/arquivo.jpg
             const folder = urlParts[urlParts.length - 2];
             const fileWithExtension = urlParts[urlParts.length - 1];
             const fileName = fileWithExtension.split('.')[0];
-            
+
             return `${folder}/${fileName}`;
         } catch (e) {
             console.error('❌ Erro ao extrair public_id da URL:', url);
@@ -149,12 +150,12 @@ export class Utils {
     /**
      * Encripta tokens sensíveis (Access/Refresh OAuth) antes de salvar no banco
      */
-    static encryptOAuthToken(token: string): { encrypted: string, iv: string } {
+    static encryptOAuthToken(token: string): { encrypted: string; iv: string } {
         const algorithm = 'aes-256-cbc';
 
         // Usa o novo helper centralizado
         const encryptionKey = this.getEnvVar('OAUTH_ENCRYPTION_KEY')?.toString().trim().replace(/["']/g, '');
-        
+
         if (!encryptionKey || encryptionKey.length !== 32) {
             throw new Error('OAUTH_ENCRYPTION_KEY deve ter exatamente 32 caracteres.');
         }
@@ -178,7 +179,9 @@ export class Utils {
         const encryptionKey = this.getEnvVar('OAUTH_ENCRYPTION_KEY')?.toString().trim().replace(/["']/g, '');
 
         if (!encryptionKey || encryptionKey.length !== 32) {
-            throw new Error('Erro de Configuração: A variável OAUTH_ENCRYPTION_KEY deve ter exatamente 32 caracteres para garantir a segurança dos tokens dos lojistas.');
+            throw new Error(
+                'Erro de Configuração: A variável OAUTH_ENCRYPTION_KEY deve ter exatamente 32 caracteres para garantir a segurança dos tokens dos lojistas.'
+            );
         }
 
         const key = crypto.scryptSync(encryptionKey, 'salt', 32);
@@ -194,19 +197,20 @@ export class Utils {
     /**
      * Calcula a distância em Quilômetros entre dois pontos geográficos usando a Fórmula de Haversine.
      * Útil para validação fina de raios e entrega de banners/estabelecimentos.
-    */
+     */
     static getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
         const R = 6371; // Raio da Terra em KM
         const dLat = (lat2 - lat1) * (Math.PI / 180);
         const dLon = (lon2 - lon1) * (Math.PI / 180);
-        
-        const a = 
+
+        const a =
             Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            
+            Math.cos(lat1 * (Math.PI / 180)) *
+                Math.cos(lat2 * (Math.PI / 180)) *
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
+
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c; // Distância retornada em KM
     }
-
 }
