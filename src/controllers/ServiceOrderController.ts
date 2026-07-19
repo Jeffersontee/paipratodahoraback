@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import ServiceOrder from '../models/ServiceOrder.model';
+import ServiceOrder from '../models/serviceorder.model';
+import { AuditService } from '../services/AuditService';
 
 export class ServiceOrderController {
     static async list(req: Request, res: Response, next: NextFunction) {
@@ -14,16 +15,19 @@ export class ServiceOrderController {
             if (req.query.collaborator_id) {
                 filter.collaborator_id = req.query.collaborator_id;
             }
-            
+
             const orders = await ServiceOrder.find(filter)
+                .populate('company_id', 'name short_name')
                 .populate('unit_id', 'name address')
                 .populate('service_id', 'name category icon')
                 .populate('collaborator_id', 'name phone')
                 .sort({ createdAt: -1 });
-                
+
+            const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(orders, (req as any).user?.type);
+
             return res.status(200).json({
                 success: true,
-                data: orders
+                data: sanitized
             });
         } catch (e: any) {
             next(e);
@@ -33,8 +37,11 @@ export class ServiceOrderController {
     static async create(req: Request, res: Response, next: NextFunction) {
         try {
             const { company_id, unit_id, service_id, collaborator_id, scheduled_date, notes } = req.body;
-            const cleanCollaboratorId = (collaborator_id === "" || collaborator_id === "null" || collaborator_id === null) ? null : collaborator_id;
-            
+            const cleanCollaboratorId =
+                collaborator_id === '' || collaborator_id === 'null' || collaborator_id === null
+                    ? null
+                    : collaborator_id;
+
             const order = new ServiceOrder({
                 company_id,
                 unit_id,
@@ -42,11 +49,13 @@ export class ServiceOrderController {
                 collaborator_id: cleanCollaboratorId,
                 scheduled_date,
                 current_status: 'AGENDADO',
-                timeline: [{
-                    status: 'AGENDADO',
-                    timestamp: new Date(),
-                    notes: 'Ordem de serviço criada e agendada.'
-                }],
+                timeline: [
+                    {
+                        status: 'AGENDADO',
+                        timestamp: new Date(),
+                        notes: 'Ordem de serviço criada e agendada.'
+                    }
+                ],
                 notes
             });
 
@@ -63,17 +72,21 @@ export class ServiceOrderController {
     static async get(req: Request, res: Response, next: NextFunction) {
         try {
             const order = await ServiceOrder.findById(req.params.id)
+                .populate('company_id')
                 .populate('unit_id')
                 .populate('service_id')
                 .populate('collaborator_id');
-                
+
             if (!order) {
                 req.errorStatus = 404;
                 throw new Error('ServiceOrder not found');
             }
+
+            const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(order, (req as any).user?.type);
+
             return res.status(200).json({
                 success: true,
-                data: order
+                data: sanitized
             });
         } catch (e: any) {
             next(e);
@@ -83,13 +96,13 @@ export class ServiceOrderController {
     static async updateStatus(req: Request, res: Response, next: NextFunction) {
         try {
             const { status, location, notes } = req.body;
-            
+
             const order = await ServiceOrder.findById(req.params.id);
             if (!order) {
                 req.errorStatus = 404;
                 throw new Error('ServiceOrder not found');
             }
-            
+
             order.current_status = status;
             order.timeline.push({
                 status,
@@ -97,13 +110,26 @@ export class ServiceOrderController {
                 location,
                 notes
             });
-            
+
             if (status === 'CHECK_IN') {
                 order.checkin_time = new Date();
                 order.checkin_location = location;
             }
-            
+
             await order.save();
+
+            // Grava Log de Auditoria para transição de status
+            await AuditService.log(req, {
+                action: `SERVICE_ORDER_STATUS_${status}`,
+                module: 'service-orders',
+                severity: 'info',
+                details: {
+                    order_id: order._id,
+                    company_id: order.company_id,
+                    new_status: status,
+                    scheduled_date: order.scheduled_date
+                }
+            });
 
             return res.status(200).json({
                 success: true,
@@ -120,20 +146,36 @@ export class ServiceOrderController {
             // Prevent overriding critical fields directly via generic update
             delete updateData.timeline;
 
-            if (updateData.collaborator_id === '' || updateData.collaborator_id === 'null' || !updateData.collaborator_id) {
+            if (
+                updateData.collaborator_id === '' ||
+                updateData.collaborator_id === 'null' ||
+                !updateData.collaborator_id
+            ) {
                 updateData.collaborator_id = null;
             }
-            
-            const order = await ServiceOrder.findByIdAndUpdate(
-                req.params.id,
-                updateData,
-                { new: true, runValidators: true }
-            );
+
+            const order = await ServiceOrder.findByIdAndUpdate(req.params.id, updateData, {
+                new: true,
+                runValidators: true
+            });
 
             if (!order) {
                 req.errorStatus = 404;
                 throw new Error('ServiceOrder not found');
             }
+
+            // Grava Log de Auditoria para Atualização de Propriedades
+            await AuditService.log(req, {
+                action: 'SERVICE_ORDER_UPDATE',
+                module: 'service-orders',
+                severity: 'info',
+                details: {
+                    order_id: order._id,
+                    company_id: order.company_id,
+                    update_keys: Object.keys(updateData),
+                    current_status: order.current_status
+                }
+            });
 
             return res.status(200).json({
                 success: true,
@@ -158,5 +200,23 @@ export class ServiceOrderController {
         } catch (e: any) {
             next(e);
         }
+    }
+
+    private static sanitizeServiceOrdersForUser(orders: any | any[], userType: string): any {
+        const hideClientPrice = userType === 'collaborator';
+
+        const sanitizeOrder = (order: any) => {
+            const doc = typeof order.toObject === 'function' ? order.toObject() : order;
+            if (hideClientPrice) {
+                delete doc.client_price;
+                delete doc.client_price_addition;
+            }
+            return doc;
+        };
+
+        if (Array.isArray(orders)) {
+            return orders.map(sanitizeOrder);
+        }
+        return sanitizeOrder(orders);
     }
 }

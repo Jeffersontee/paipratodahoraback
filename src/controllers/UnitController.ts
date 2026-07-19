@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import Unit from '../models/Unit.model';
+import Unit from '../models/unit.model';
 
 export class UnitController {
     static async list(req: Request, res: Response, next: NextFunction) {
@@ -23,8 +23,9 @@ export class UnitController {
 
     static async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, company_id, address, manager_id, follower_ids, status, cnpj, phone, email, short_name } = req.body;
-            
+            const { name, company_id, address, manager_id, follower_ids, status, cnpj, phone, email, short_name } =
+                req.body;
+
             const unit = new Unit({
                 name,
                 company_id,
@@ -67,7 +68,8 @@ export class UnitController {
 
     static async update(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, company_id, address, manager_id, follower_ids, status, cnpj, phone, email, short_name } = req.body;
+            const { name, company_id, address, manager_id, follower_ids, status, cnpj, phone, email, short_name } =
+                req.body;
             const unit = await Unit.findByIdAndUpdate(
                 req.params.id,
                 { name, company_id, address, manager_id, follower_ids, status, cnpj, phone, email, short_name },

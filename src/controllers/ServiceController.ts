@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import Service from '../models/Service.model';
+import Service from '../models/service.model';
 
 export class ServiceController {
     static async list(req: Request, res: Response, next: NextFunction) {
@@ -21,7 +21,7 @@ export class ServiceController {
     static async create(req: Request, res: Response, next: NextFunction) {
         try {
             const { name, description, icon, category, price, status, company_id } = req.body;
-            
+
             const service = new Service({
                 name,
                 description,

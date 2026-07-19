@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import Company from '../models/company.model';
 import User from '../models/user.model';
-import ServiceOrder from '../models/ServiceOrder.model';
-import Subscription from '../models/Subscription.model';
+import ServiceOrder from '../models/serviceorder.model';
+import Subscription from '../models/subscription.model';
 
 export class DashboardController {
     static async getStats(req: Request, res: Response, next: NextFunction) {
@@ -22,7 +22,9 @@ export class DashboardController {
                 User.countDocuments(),
                 ServiceOrder.countDocuments(),
                 ServiceOrder.countDocuments({ current_status: 'CONCLUIDO' }),
-                ServiceOrder.countDocuments({ current_status: { $in: ['AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO'] } }),
+                ServiceOrder.countDocuments({
+                    current_status: { $in: ['AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO'] }
+                }),
                 ServiceOrder.countDocuments({ current_status: 'CANCELADO' })
             ]);
 
