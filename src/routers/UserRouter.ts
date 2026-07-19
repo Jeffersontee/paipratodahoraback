@@ -19,6 +19,7 @@ class UserRouter {
         // this.router.get('/send/reset/password/token', UserController.sendResetPasswordOtp);
         // this.router.get('/verify/resetPasswordToken', UserController.verifyResetPasswordToken);
         this.router.get('/profile', GlobalMiddleWare.auth, UserController.profile);
+        this.router.get('/staff', GlobalMiddleWare.auth, UserController.listStaff);
     }
 
     postRoutes() {
@@ -27,9 +28,11 @@ class UserRouter {
         this.router.post('/signup-company', UserController.signupCompany);
         this.router.post('/refresh_token', GlobalMiddleWare.decodeRefreshToken, UserController.getNewTokens);
         this.router.post('/logout', GlobalMiddleWare.auth, GlobalMiddleWare.decodeRefreshToken, UserController.logout);
+        this.router.post('/staff', GlobalMiddleWare.auth, UserController.createStaff);
     }
 
     patchRoutes() {
+        this.router.patch('/staff/:id', GlobalMiddleWare.auth, UserController.updateStaff);
         // this.router.patch('/reset/password', UserController.resetPassword);
         // this.router.patch('/verify/emailToken', GlobalMiddleWare.auth, UserController.verifyUserEmailToken);
         // this.router.patch('/update/phone', GlobalMiddleWare.auth, UserController.updatePhoneNumber);
@@ -45,7 +48,9 @@ class UserRouter {
         );
     }
 
-    deleteRoutes() {}
+    deleteRoutes() {
+        this.router.delete('/staff/:id', GlobalMiddleWare.auth, UserController.deleteStaff);
+    }
 }
 
 export default new UserRouter().router;

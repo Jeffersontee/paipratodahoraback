@@ -1,4 +1,4 @@
-﻿import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import Company from '../models/company.model';
 import Subscription from '../models/Subscription.model';
 import User from '../models/user.model';
@@ -172,7 +172,7 @@ export class CompanyController {
                     await NodeMailer.sendMail({
                         to: [user.email],
                         subject: 'Bem-vindo ao sistema!',
-                        html: \<h1>Sua conta foi criada. Use este e-mail para logar.</h1>\
+                        html: `<h1>Sua conta foi criada. Use este e-mail para logar.</h1>`
                     });
                 } catch (e) {
                     console.error('Falha ao enviar email', e);

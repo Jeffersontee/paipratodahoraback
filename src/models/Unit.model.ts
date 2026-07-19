@@ -19,6 +19,10 @@ export interface IUnit {
     manager_id?: Types.ObjectId;
     follower_ids?: Types.ObjectId[];
     status: 'ACTIVE' | 'INACTIVE';
+    cnpj?: string;
+    phone?: string;
+    email?: string;
+    short_name?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -44,7 +48,11 @@ const UnitSchema = new Schema<IUnitDocument>(
         address: { type: UnitAddressSchema, required: true },
         manager_id: { type: Schema.Types.ObjectId, ref: 'User', required: false },
         follower_ids: { type: [{ type: Schema.Types.ObjectId, ref: 'User' }], default: [] },
-        status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' }
+        status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' },
+        cnpj: { type: String, required: false },
+        phone: { type: String, required: false },
+        email: { type: String, required: false },
+        short_name: { type: String, required: false }
     },
     {
         timestamps: true

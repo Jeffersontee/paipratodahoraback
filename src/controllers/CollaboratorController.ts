@@ -41,8 +41,16 @@ export class CollaboratorController {
                 role,
                 status: status || 'active',
                 email_verified: true, // Supondo verificado por admin
-                company_id: company_id
             };
+
+            // Donos de empresa vinculam automaticamente à sua empresa, super_admin pode criar solto ou vincular se passar company_id no body
+            if (adminUser?.type === 'super_admin') {
+                if (req.body.company_id) {
+                    collaboratorData.company_id = req.body.company_id;
+                }
+            } else {
+                collaboratorData.company_id = company_id;
+            }
 
             if (role === 'technician' && technician_profile) {
                 collaboratorData.technician_profile = technician_profile;
@@ -65,7 +73,14 @@ export class CollaboratorController {
             const adminUser = await User.findById(req.user?.aud || req.user?.user_id || req.user?._id);
             const company_id = adminUser?.company_id || null;
 
-            const collaborators = await User.find({ type: 'collaborator', company_id }).select('-password -__v');
+            const filter: any = { type: 'collaborator' };
+            if (adminUser?.type !== 'super_admin') {
+                filter.company_id = company_id;
+            }
+
+            const collaborators = await User.find(filter)
+                .populate('company_id', 'name')
+                .select('-password -__v');
             
             res.status(200).json({
                 success: true,

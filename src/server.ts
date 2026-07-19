@@ -1,4 +1,4 @@
-﻿import { Utils } from './utils/Utils';
+import { Utils } from './utils/Utils';
 import express from 'express';
 import { initializeApp, getApps, cert } from 'firebase-admin/app'; // 1. Importe o SDK
 import mongoose from 'mongoose';
@@ -39,6 +39,7 @@ import ServiceRouter from './routers/ServiceRouter';
 import CollaboratorRouter from './routers/CollaboratorRouter';
 import UnitRouter from './routers/UnitRouter';
 import ServiceOrderRouter from './routers/ServiceOrderRouter';
+import DashboardRouter from './routers/DashboardRouter';
 
 export class Server {
     public app: express.Application = express();
@@ -258,6 +259,7 @@ export class Server {
         this.app.use('/api/collaborators', CollaboratorRouter);
         this.app.use('/api/units', UnitRouter);
         this.app.use('/api/service-orders', ServiceOrderRouter);
+        this.app.use('/api/dashboard', DashboardRouter);
 
         // Alias para capturar callbacks de OAuth que não possuem o prefixo /api/payments
         // Isso resolve o erro 404 quando o Redirect URI é configurado na raiz no painel do MP

@@ -1,4 +1,4 @@
-﻿import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { Redis } from './../utils/Redis';
 import { Jwt } from './../utils/Jwt';
@@ -1093,6 +1093,108 @@ export class UserController {
             return res.status(200).json({
                 success: true,
                 data: user
+            });
+        } catch (e: any) {
+            next(e);
+        }
+    }
+
+    // --- Super Admin Staff (Usuários Globais) ---
+
+    static async listStaff(req: Request, res: Response, next: NextFunction) {
+        try {
+            const staffList = await User.find({
+                type: { $in: ['super_admin', 'admin', 'company_owner', 'collaborator'] }
+            })
+            .populate('company_id', 'name')
+            .select('-password -verification_token')
+            .sort({ createdAt: -1 });
+
+            return res.status(200).json({
+                success: true,
+                data: staffList
+            });
+        } catch (e: any) {
+            next(e);
+        }
+    }
+
+    static async createStaff(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { name, email, phone, password, type, company_id, status } = req.body;
+
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                return res.status(422).json({ success: false, message: 'Já existe um usuário cadastrado com este e-mail.' });
+            }
+
+            const hash = await Utils.encryptPassword(password || '123456'); // senha padrão simples caso vazia
+            const verification_token = Utils.generateVerificationToken();
+
+            const newUser = new User({
+                name,
+                email,
+                phone,
+                type: type || 'admin',
+                password: hash,
+                company_id: company_id || null,
+                status: status || 'active',
+                email_verified: true,
+                verification_token,
+                verification_token_time: Date.now() + new Utils().MAX_TOKEN_TIME
+            });
+
+            await newUser.save();
+
+            return res.status(201).json({
+                success: true,
+                data: newUser
+            });
+        } catch (e: any) {
+            next(e);
+        }
+    }
+
+    static async updateStaff(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { name, email, phone, type, company_id, status, password } = req.body;
+            
+            const user = await User.findById(req.params.id);
+            if (!user) {
+                return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+            }
+
+            user.name = name || user.name;
+            user.email = email || user.email;
+            user.phone = phone || user.phone;
+            user.type = type || user.type;
+            user.company_id = company_id || null;
+            user.status = status || user.status;
+
+            if (password) {
+                user.password = await Utils.encryptPassword(password);
+            }
+
+            await user.save();
+
+            return res.status(200).json({
+                success: true,
+                data: user
+            });
+        } catch (e: any) {
+            next(e);
+        }
+    }
+
+    static async deleteStaff(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = await User.findByIdAndDelete(req.params.id);
+            if (!user) {
+                return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+            }
+            return res.status(200).json({
+                success: true,
+                data: null
             });
         } catch (e: any) {
             next(e);
