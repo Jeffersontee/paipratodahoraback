@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { UnitValidator } from '../validators/UnitValidator';
 import { UnitController } from '../controllers/UnitController';
 
 class UnitRouter {

@@ -1,4 +1,5 @@
 import { GlobalMiddleWare } from '../middlewares/GlobalMiddleware';
+import { AuditValidator } from '../validators/AuditValidator';
 import { Router } from 'express';
 import { AuditController } from '../controllers/AuditController';
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { UserValidator } from '../validators/UserValidator';
 import { UserController } from '../controllers/UserController';
 import { GlobalMiddleWare } from '../middlewares/GlobalMiddleware';
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { ServiceValidator } from '../validators/ServiceValidator';
 import { ServiceController } from '../controllers/ServiceController';
 
 class ServiceRouter {

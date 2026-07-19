@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { CompanyValidator } from '../validators/CompanyValidator';
 import { CompanyController } from '../controllers/CompanyController';
 
 class CompanyRouter {
@@ -20,6 +21,9 @@ class CompanyRouter {
         this.router.get('/:id/users', CompanyController.listUsers);
         this.router.post('/:id/users', CompanyController.assignUser);
         this.router.delete('/:id/users/:userId', CompanyController.removeUser);
+
+        // Catálogo de serviços da empresa (Lojista)
+        this.router.patch('/:id/services', CompanyController.updateServices);
     }
 }
 
