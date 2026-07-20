@@ -6,10 +6,10 @@ export class Stripe implements IPaymentGateway {
     private instance: stripe;
 
     // Cliente estático padrão para compatibilidade com OrderController (usa chaves do .env)
-    public static client = new stripe(getEnvironmentVariables().stripe?.secret_key || '', { apiVersion: '2022-11-15' });
+    public static client = new stripe(getEnvironmentVariables().stripe?.secret_key || '', { apiVersion: '2022-11-15' as any });
 
     constructor(secretKey: string) {
-        this.instance = new stripe(secretKey, { apiVersion: '2022-11-15' });
+        this.instance = new stripe(secretKey, { apiVersion: '2022-11-15' as any });
     }
 
     async createPix(data: any): Promise<any> {
@@ -44,7 +44,7 @@ export class Stripe implements IPaymentGateway {
                 entityType,
                 status: event.type === 'payment_intent.succeeded' ? 'approved' : 'rejected',
                 paymentId: paymentIntent.id,
-                establishmentId: metadata.establishment_id,
+                companyId: metadata.company_id || metadata.establishment_id,
                 error: paymentIntent.last_payment_error?.message
             };
         }
@@ -75,7 +75,7 @@ export class Stripe implements IPaymentGateway {
             entityType,
             status: statusMap[paymentIntent.status] || 'pending',
             paymentId: paymentIntent.id,
-            establishmentId: metadata.establishment_id,
+            companyId: metadata.company_id || metadata.establishment_id,
             error: paymentIntent.last_payment_error?.message
         };
     }

@@ -25,7 +25,7 @@ export class PayPal implements IPaymentGateway {
             entityType: 'order',
             status: body.event_type === 'PAYMENT.CAPTURE.COMPLETED' ? 'approved' : 'pending',
             paymentId: body.resource?.id,
-            establishmentId: query?.establishment_id
+            companyId: query?.company_id
         };
     }
 

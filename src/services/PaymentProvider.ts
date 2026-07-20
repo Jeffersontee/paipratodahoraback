@@ -8,7 +8,7 @@ export interface WebhookResult {
     entityType: 'order' | 'subscription' | 'invoice';
     status: 'approved' | 'rejected' | 'pending';
     paymentId: string;
-    establishmentId?: string;
+    companyId?: string;
     error?: string;
 }
 

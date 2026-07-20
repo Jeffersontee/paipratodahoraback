@@ -42,27 +42,36 @@ export class ServiceOrderController {
                     ? null
                     : collaborator_id;
 
+            const initialStatus = req.body.current_status || (cleanCollaboratorId ? 'AGENDADO' : 'SOLICITADO');
+
             const order = new ServiceOrder({
                 company_id,
                 unit_id,
                 service_id,
                 collaborator_id: cleanCollaboratorId,
                 scheduled_date,
-                current_status: 'AGENDADO',
+                current_status: initialStatus,
                 timeline: [
                     {
-                        status: 'AGENDADO',
+                        status: initialStatus,
                         timestamp: new Date(),
-                        notes: 'Ordem de serviço criada e agendada.'
+                        notes: initialStatus === 'AGENDADO' ? 'Ordem de serviço criada e agendada.' : 'Ordem de serviço solicitada.'
                     }
                 ],
                 notes
             });
 
             await order.save();
+            const populated = await order.populate([
+                { path: 'company_id' },
+                { path: 'unit_id' },
+                { path: 'service_id' },
+                { path: 'collaborator_id' }
+            ]);
+            const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
             return res.status(201).json({
                 success: true,
-                data: order
+                data: sanitized
             });
         } catch (e: any) {
             next(e);
@@ -131,9 +140,17 @@ export class ServiceOrderController {
                 }
             });
 
+            const populated = await order.populate([
+                { path: 'company_id' },
+                { path: 'unit_id' },
+                { path: 'service_id' },
+                { path: 'collaborator_id' }
+            ]);
+            const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
+
             return res.status(200).json({
                 success: true,
-                data: order
+                data: sanitized
             });
         } catch (e: any) {
             next(e);
@@ -177,9 +194,17 @@ export class ServiceOrderController {
                 }
             });
 
+            const populated = await order.populate([
+                { path: 'company_id' },
+                { path: 'unit_id' },
+                { path: 'service_id' },
+                { path: 'collaborator_id' }
+            ]);
+            const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
+
             return res.status(200).json({
                 success: true,
-                data: order
+                data: sanitized
             });
         } catch (e: any) {
             next(e);

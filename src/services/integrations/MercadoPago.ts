@@ -1,4 +1,4 @@
-﻿﻿import { MercadoPagoConfig, Payment, PaymentRefund } from 'mercadopago';
+﻿import { MercadoPagoConfig, Payment, PaymentRefund } from 'mercadopago';
 import { IPaymentGateway, WebhookResult } from '../PaymentProvider';
 import { Utils } from '../../utils/Utils';
 import mongoose from 'mongoose';
@@ -108,12 +108,12 @@ export class MercadoPago implements IPaymentGateway {
         }
 
         try {
-            const result = await MercadoPago.retryMercadoPagoRequest(() =>
+            const result = (await MercadoPago.retryMercadoPagoRequest(() =>
                 payment.create({
                     body,
                     requestOptions: { idempotencyKey: externalReference + '_pix', timeout: 10000 }
                 })
-            );
+            )) as any;
 
             return {
                 id: result.id,

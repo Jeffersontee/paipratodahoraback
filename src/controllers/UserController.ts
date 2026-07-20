@@ -657,7 +657,12 @@ export class UserController {
                 // 1. Detecção de Bot/Abuso: Verifica refreshes na última hora
                 const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
                 if (!mongoose.connection.db) {
-                    throw new Error('Database connection not established');
+                    if (mongoose.connection.readyState === 2) { // 2 = connecting
+                        await new Promise((resolve) => mongoose.connection.once('connected', resolve));
+                    }
+                    if (!mongoose.connection.db) {
+                        throw new Error('Database connection not established');
+                    }
                 }
                 const refreshCount = await mongoose.connection.db.collection('audits').countDocuments({
                     user_id: decoded_data.aud,
