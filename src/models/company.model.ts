@@ -1,22 +1,8 @@
 import { Schema, Document, model } from 'mongoose';
+import { ICompany } from '../interfaces/company.interface'; // Importa a interface limpa
 
-export interface ICompany {
-    name: string;
-    owner_name: string;
-    short_name: String;
-    description: String;
-    cnpj: string;
-    email: String;
-    active: boolean;
-    subscription_status?: string;
-    next_payment_date?: Date;
-    subscription_id?: any;
-    services?: any[];
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export interface ICompanyDocument extends ICompany, Document {}
+// Estende a interface pura apenas para o escopo do Mongoose
+export interface ICompanyDocument extends Omit<ICompany, '_id'>, Document {}
 
 const CompanySchema = new Schema<ICompanyDocument>(
     {
@@ -27,7 +13,7 @@ const CompanySchema = new Schema<ICompanyDocument>(
         cnpj: { type: String, required: true, unique: true },
         email: { type: String },
         active: { type: Boolean, default: true },
-        subscription_status: { type: String, default: 'active' }, // trial, active, inactive, canceled
+        subscription_status: { type: String, default: 'active' },
         next_payment_date: { type: Date, required: false },
         subscription_id: { type: Schema.Types.ObjectId, ref: 'subscriptions', required: false },
         services: [{ type: Schema.Types.ObjectId, ref: 'Service', default: [] }]

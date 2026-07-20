@@ -1,5 +1,5 @@
 ﻿import { Request, Response, NextFunction } from 'express';
-import Invoice from '../models/Invoice.model';
+import Invoice from '../models/invoice.model';
 import { AuditService } from '../services/AuditService';
 import { NotificationService } from '../services/NotificationService';
 import Company from '../models/company.model';
@@ -65,10 +65,7 @@ export class InvoiceController {
             if (!invoice) throw new Error('Fatura não encontrada');
 
             // Proteção de Tenant
-            if (
-                user.type === 'company_owner' &&
-                String(invoice.company_id._id) !== String(user.company_id)
-            ) {
+            if (user.type === 'company_owner' && String(invoice.company_id._id) !== String(user.company_id)) {
                 req.errorStatus = 403;
                 throw new Error('Acesso negado: Esta fatura pertence a outro estabelecimento.');
             }
@@ -132,7 +129,11 @@ export class InvoiceController {
                 const est = await Company.findById(invoice.company_id);
                 if (est) {
                     await NotificationService.sendOrderStatusPush(
-                        (await mongoose.connection.model('users').findOne({company_id: est._id, type: 'company_owner'}))?._id?.toString(),
+                        (
+                            await mongoose.connection
+                                .model('users')
+                                .findOne({ company_id: est._id, type: 'company_owner' })
+                        )?._id?.toString(),
                         `Sua fatura de R$ ${invoice.amount.toFixed(2)} está vencida. Evite o bloqueio dos serviços realizando o pagamento.`
                     );
                 }

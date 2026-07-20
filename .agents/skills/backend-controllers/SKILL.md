@@ -7,4 +7,4 @@ description: Rules and patterns for creating controllers with Express and TypeSc
 This skill covers the standard patterns for creating controller classes using Express and TypeScript, including JSON response envelopes and transaction/session management.
 
 ## References
-- [Controller Reference Guide](file:///c:/workspace/BravosBravoV2/BravoBravoback/.agents/skills/backend-controllers/references/CONTROLLER.md)
+- [Controller Reference Guide](file:///c:/workspace/workspace_bravo-instalacoes/bravoback/.agents/skills/backend-controllers/references/CONTROLLER.md)

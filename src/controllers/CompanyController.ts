@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import Company from '../models/company.model';
-import Subscription from '../models/Subscription.model';
+import Subscription from '../models/subscription.model';
 import User from '../models/user.model';
 import { Utils } from '../utils/Utils';
 import { NodeMailer } from '../services/integrations/NodeMailer';
+import { ICompanyCreateInput } from '../interfaces/company.interface';
 
 export class CompanyController {
     static async list(req: Request, res: Response, next: NextFunction) {
@@ -20,22 +21,13 @@ export class CompanyController {
 
     static async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, owner_name, short_name, description, cnpj, email, active } = req.body;
-            const existingCompany = await Company.findOne({ cnpj });
+            const body: ICompanyCreateInput = req.body;
+            const existingCompany = await Company.findOne({ cnpj: body.cnpj });
             if (existingCompany) {
                 return res.status(422).json({ success: false, message: 'A company with this CNPJ already exists' });
             }
 
-            const company = new Company({
-                name,
-                owner_name,
-                short_name,
-                description,
-                cnpj,
-                email,
-                active
-            });
-
+            const company = new Company(body);
             await company.save();
 
             // Cria a assinatura em status trialing (trial)
@@ -172,11 +164,13 @@ export class CompanyController {
             } else {
                 // Cria novo
                 if (!password) {
-                    return res.status(422).json({ success: false, message: 'A senha é obrigatória para criar um novo usuário.' });
+                    return res
+                        .status(422)
+                        .json({ success: false, message: 'A senha é obrigatória para criar um novo usuário.' });
                 }
                 const hash = await Utils.encryptPassword(password);
                 const verification_token = Utils.generateVerificationToken();
-                
+
                 user = new User({
                     name,
                     email,
@@ -186,7 +180,7 @@ export class CompanyController {
                     company_id: companyId,
                     status: 'active',
                     verification_token,
-                    verification_token_time: Date.now() + new Utils().MAX_TOKEN_TIME,
+                    verification_token_time: Date.now() + new Utils().MAX_TOKEN_TIME
                 });
                 await user.save();
 

@@ -1,5 +1,5 @@
 ﻿import { Request, Response, NextFunction } from 'express';
-import SaaSAudit from '../models/Audit.model';
+import SaaSAudit from '../models/audit.model';
 
 export class AuditController {
     /**

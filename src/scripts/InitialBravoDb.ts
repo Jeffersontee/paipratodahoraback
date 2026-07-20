@@ -2,9 +2,9 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { User } from '../models/user.model';
 import { Company } from '../models/company.model';
-import { Unit } from '../models/Unit.model';
-import { Service } from '../models/Service.model';
-import { ServiceOrder } from '../models/ServiceOrder.model';
+import { Unit } from '../models/unit.model';
+import { Service } from '../models/service.model';
+import { ServiceOrder } from '../models/serviceorder.model';
 import bcrypt from 'bcrypt';
 
 dotenv.config();
@@ -258,26 +258,73 @@ async function seedDatabase() {
 
     // 6. SERVIÇOS DO CATÁLOGO POR EMPRESA
     const servicesZD = await Service.insertMany([
-        { company_id: zeDelivery._id, name: 'Manutenção de Quadro Elétrico', category: 'ELÉTRICA', price: 150.00, icon: 'flash-outline', description: 'Revisão e aperto técnico' },
-        { company_id: zeDelivery._id, name: 'Reparo em Vazamentos', category: 'HIDRÁULICA/CIVIL', price: 200.00, icon: 'water-outline', description: 'Reparo de vazamento hidráulico' },
-        { company_id: zeDelivery._id, name: 'Manutenção de Portões', category: 'SERRALHERIA', price: 300.00, icon: 'build-outline', description: 'Lubrificação e soldas' }
+        {
+            company_id: zeDelivery._id,
+            name: 'Manutenção de Quadro Elétrico',
+            category: 'ELÉTRICA',
+            price: 150.0,
+            icon: 'flash-outline',
+            description: 'Revisão e aperto técnico'
+        },
+        {
+            company_id: zeDelivery._id,
+            name: 'Reparo em Vazamentos',
+            category: 'HIDRÁULICA/CIVIL',
+            price: 200.0,
+            icon: 'water-outline',
+            description: 'Reparo de vazamento hidráulico'
+        },
+        {
+            company_id: zeDelivery._id,
+            name: 'Manutenção de Portões',
+            category: 'SERRALHERIA',
+            price: 300.0,
+            icon: 'build-outline',
+            description: 'Lubrificação e soldas'
+        }
     ]);
 
     const servicesFlash = await Service.insertMany([
-        { company_id: flashLtda._id, name: 'Instalação de Disjuntor NEMA', category: 'ELÉTRICA', price: 120.00, icon: 'flash-outline', description: 'Instalação padrão' },
-        { company_id: flashLtda._id, name: 'Desobstrução Sanitária', category: 'HIDRÁULICA/CIVIL', price: 180.00, icon: 'water-outline', description: 'Limpeza de tubulações' },
-        { company_id: flashLtda._id, name: 'Troca de Dobradiça Metálica', category: 'SERRALHERIA', price: 90.00, icon: 'key-outline', description: 'Ajuste de portas' }
+        {
+            company_id: flashLtda._id,
+            name: 'Instalação de Disjuntor NEMA',
+            category: 'ELÉTRICA',
+            price: 120.0,
+            icon: 'flash-outline',
+            description: 'Instalação padrão'
+        },
+        {
+            company_id: flashLtda._id,
+            name: 'Desobstrução Sanitária',
+            category: 'HIDRÁULICA/CIVIL',
+            price: 180.0,
+            icon: 'water-outline',
+            description: 'Limpeza de tubulações'
+        },
+        {
+            company_id: flashLtda._id,
+            name: 'Troca de Dobradiça Metálica',
+            category: 'SERRALHERIA',
+            price: 90.0,
+            icon: 'key-outline',
+            description: 'Ajuste de portas'
+        }
     ]);
     console.log('✅ Serviços das empresas cadastrados.');
 
     // 7. HISTÓRICO DE VISITAS E SOLICITAÇÕES (SERVICE ORDERS)
     const today = new Date();
-    
-    const d1 = new Date(); d1.setDate(today.getDate() - 25);
-    const d2 = new Date(); d2.setDate(today.getDate() - 18);
-    const d3 = new Date(); d3.setDate(today.getDate() - 12);
-    const d4 = new Date(); d4.setDate(today.getDate() - 6);
-    const d5 = new Date(); d5.setDate(today.getDate() - 2);
+
+    const d1 = new Date();
+    d1.setDate(today.getDate() - 25);
+    const d2 = new Date();
+    d2.setDate(today.getDate() - 18);
+    const d3 = new Date();
+    d3.setDate(today.getDate() - 12);
+    const d4 = new Date();
+    d4.setDate(today.getDate() - 6);
+    const d5 = new Date();
+    d5.setDate(today.getDate() - 2);
 
     await ServiceOrder.insertMany([
         // ZÉ DELIVERY - Vila Ré
@@ -294,7 +341,10 @@ async function seedDatabase() {
             zone: 'ZL',
             address_override: 'Rua Itinguçu, 1000 - Vila Ré',
             notes: 'Quadro elétrico revisado.',
-            timeline: [{ status: 'AGENDADO', timestamp: d1 }, { status: 'CONCLUIDO', timestamp: d1 }]
+            timeline: [
+                { status: 'AGENDADO', timestamp: d1 },
+                { status: 'CONCLUIDO', timestamp: d1 }
+            ]
         },
         {
             company_id: zeDelivery._id,
@@ -309,7 +359,10 @@ async function seedDatabase() {
             zone: 'ZL',
             address_override: 'Rua Itinguçu, 1000 - Vila Ré',
             notes: 'Vazamento da pia da copa consertado.',
-            timeline: [{ status: 'AGENDADO', timestamp: d3 }, { status: 'CONCLUIDO', timestamp: d3 }]
+            timeline: [
+                { status: 'AGENDADO', timestamp: d3 },
+                { status: 'CONCLUIDO', timestamp: d3 }
+            ]
         },
         {
             company_id: zeDelivery._id,
@@ -324,7 +377,10 @@ async function seedDatabase() {
             zone: 'ZL',
             address_override: 'Rua Itinguçu, 1000 - Vila Ré',
             notes: 'Motor do portão reinstalado.',
-            timeline: [{ status: 'AGENDADO', timestamp: d5 }, { status: 'CONCLUIDO', timestamp: d5 }]
+            timeline: [
+                { status: 'AGENDADO', timestamp: d5 },
+                { status: 'CONCLUIDO', timestamp: d5 }
+            ]
         },
 
         // ZÉ DELIVERY - Itaquera
@@ -341,7 +397,10 @@ async function seedDatabase() {
             zone: 'ZL',
             address_override: 'Av. Itaquera, 5000 - Itaquera',
             notes: 'Reaperto de disjuntores.',
-            timeline: [{ status: 'AGENDADO', timestamp: d2 }, { status: 'CONCLUIDO', timestamp: d2 }]
+            timeline: [
+                { status: 'AGENDADO', timestamp: d2 },
+                { status: 'CONCLUIDO', timestamp: d2 }
+            ]
         },
         {
             company_id: zeDelivery._id,
@@ -356,7 +415,10 @@ async function seedDatabase() {
             zone: 'ZL',
             address_override: 'Av. Itaquera, 5000 - Itaquera',
             notes: 'Troca de encanamento trincado.',
-            timeline: [{ status: 'AGENDADO', timestamp: d4 }, { status: 'CONCLUIDO', timestamp: d4 }]
+            timeline: [
+                { status: 'AGENDADO', timestamp: d4 },
+                { status: 'CONCLUIDO', timestamp: d4 }
+            ]
         },
         {
             company_id: zeDelivery._id,
@@ -384,7 +446,10 @@ async function seedDatabase() {
             zone: 'Centro',
             address_override: 'Avenida Paulista, 1000 - Bela Vista',
             notes: 'Disjuntor instalado.',
-            timeline: [{ status: 'AGENDADO', timestamp: d1 }, { status: 'CONCLUIDO', timestamp: d1 }]
+            timeline: [
+                { status: 'AGENDADO', timestamp: d1 },
+                { status: 'CONCLUIDO', timestamp: d1 }
+            ]
         },
         {
             company_id: flashLtda._id,
@@ -399,7 +464,10 @@ async function seedDatabase() {
             zone: 'Centro',
             address_override: 'Avenida Paulista, 1000 - Bela Vista',
             notes: 'Coluna desentupida.',
-            timeline: [{ status: 'AGENDADO', timestamp: d3 }, { status: 'CONCLUIDO', timestamp: d3 }]
+            timeline: [
+                { status: 'AGENDADO', timestamp: d3 },
+                { status: 'CONCLUIDO', timestamp: d3 }
+            ]
         },
 
         // FLASH LTDA - João Dias
@@ -416,7 +484,10 @@ async function seedDatabase() {
             zone: 'ZS',
             address_override: 'Estrada de Itapecerica, 500 - Vila Andrade',
             notes: 'Dobradiça substituída.',
-            timeline: [{ status: 'AGENDADO', timestamp: d2 }, { status: 'CONCLUIDO', timestamp: d2 }]
+            timeline: [
+                { status: 'AGENDADO', timestamp: d2 },
+                { status: 'CONCLUIDO', timestamp: d2 }
+            ]
         },
         {
             company_id: flashLtda._id,
@@ -427,7 +498,10 @@ async function seedDatabase() {
             zone: 'ZS',
             address_override: 'Estrada de Itapecerica, 500 - Vila Andrade',
             notes: 'Lâmpadas piscando no escritório principal.',
-            timeline: [{ status: 'AGENDADO', timestamp: today }, { status: 'EM_DESLOCAMENTO', timestamp: today }]
+            timeline: [
+                { status: 'AGENDADO', timestamp: today },
+                { status: 'EM_DESLOCAMENTO', timestamp: today }
+            ]
         }
     ]);
 

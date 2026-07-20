@@ -15,4 +15,4 @@ Para facilitar a legibilidade, organização e manutenção do código, adotamos
 3. **Padrão de Nome de Arquivo:** O arquivo do subdocumento deve usar PascalCase ou camelCase coerente com o subschema e ser colocado na pasta `src/models/`.
 
 ## References
-- [Model Reference Guide](file:///c:/workspace/BravosBravoV2/BravoBravoback/.agents/skills/backend-models/references/MODEL.md)
+- [Model Reference Guide](file:///c:/workspace/workspace_bravo-instalacoes/bravoback/.agents/skills/backend-models/references/MODEL.md)

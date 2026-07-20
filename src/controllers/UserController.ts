@@ -7,8 +7,8 @@ import { Utils } from './../utils/Utils';
 import User from '../models/user.model';
 import { Cloudinary } from '../services/integrations/Cloudinary';
 import Company from '../models/company.model';
-import Subscription from '../models/Subscription.model';
-import { IUser } from '../models/IUser.model';
+import Subscription from '../models/subscription.model';
+import { IUser } from '../interfaces/user.interface';
 import { AuditService } from '../services/AuditService';
 
 export class UserController {
@@ -275,12 +275,12 @@ export class UserController {
     static async login(req: Request, res: Response, next: NextFunction) {
         try {
             let user = req.user as IUser & { password: string };
-            
+
             // Se o usuário não foi populado por um middleware (ex: validador), busca pelo email
             if (!user) {
                 const email = req.body.email;
-                user = await User.findOne({ email }).select('+password') as IUser & { password: string };
-                
+                user = (await User.findOne({ email }).select('+password')) as IUser & { password: string };
+
                 if (!user) {
                     throw new Error('E-mail ou senha incorretos.');
                 }
@@ -313,9 +313,7 @@ export class UserController {
             let subscriptionStatus = 'active';
             let nextPayment = null;
             if (companyId) {
-                const comp = await Company.findById(companyId).select(
-                    'subscription_status next_payment_date'
-                );
+                const comp = await Company.findById(companyId).select('subscription_status next_payment_date');
                 subscriptionStatus = comp?.subscription_status || 'inactive';
                 nextPayment = comp?.next_payment_date;
             }
@@ -466,9 +464,7 @@ export class UserController {
                 }
 
                 if (companyId) {
-                    const comp: any = await Company.findById(companyId).select(
-                        'subscription_status next_payment_date'
-                    );
+                    const comp: any = await Company.findById(companyId).select('subscription_status next_payment_date');
 
                     const subscription: any = await Subscription.findOne({ company_id: companyId })
                         .sort({ created_at: -1 })
@@ -608,9 +604,7 @@ export class UserController {
             }
 
             // Obtém o ID diretamente do usuário atualizado
-            let companyId: string | null = updatedUser.company_id
-                ? String(updatedUser.company_id)
-                : null;
+            let companyId: string | null = updatedUser.company_id ? String(updatedUser.company_id) : null;
             if (!companyId && updatedUser.type === 'company_owner') {
                 const comp = await Company.findOne({ email: updatedUser.email }).select('_id');
                 if (comp) {
@@ -663,7 +657,12 @@ export class UserController {
                 // 1. Detecção de Bot/Abuso: Verifica refreshes na última hora
                 const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
                 if (!mongoose.connection.db) {
-                    throw new Error('Database connection not established');
+                    if (mongoose.connection.readyState === 2) { // 2 = connecting
+                        await new Promise((resolve) => mongoose.connection.once('connected', resolve));
+                    }
+                    if (!mongoose.connection.db) {
+                        throw new Error('Database connection not established');
+                    }
                 }
                 const refreshCount = await mongoose.connection.db.collection('audits').countDocuments({
                     user_id: decoded_data.aud,
@@ -1106,9 +1105,9 @@ export class UserController {
             const staffList = await User.find({
                 type: { $in: ['super_admin', 'admin', 'company_owner', 'collaborator'] }
             })
-            .populate('company_id', 'name')
-            .select('-password -verification_token')
-            .sort({ createdAt: -1 });
+                .populate('company_id', 'name')
+                .select('-password -verification_token')
+                .sort({ createdAt: -1 });
 
             return res.status(200).json({
                 success: true,
@@ -1125,7 +1124,9 @@ export class UserController {
 
             const existingUser = await User.findOne({ email });
             if (existingUser) {
-                return res.status(422).json({ success: false, message: 'Já existe um usuário cadastrado com este e-mail.' });
+                return res
+                    .status(422)
+                    .json({ success: false, message: 'Já existe um usuário cadastrado com este e-mail.' });
             }
 
             const hash = await Utils.encryptPassword(password || '123456'); // senha padrão simples caso vazia
@@ -1158,7 +1159,7 @@ export class UserController {
     static async updateStaff(req: Request, res: Response, next: NextFunction) {
         try {
             const { name, email, phone, type, company_id, status, password } = req.body;
-            
+
             const user = await User.findById(req.params.id);
             if (!user) {
                 return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });

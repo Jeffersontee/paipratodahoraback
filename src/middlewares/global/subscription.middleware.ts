@@ -1,6 +1,6 @@
 ﻿import { Request, Response, NextFunction } from 'express';
 import Company from '../../models/company.model';
-import Invoice from '../../models/Invoice.model';
+import Invoice from '../../models/invoice.model';
 
 export class SubscriptionMiddleware {
     /**
@@ -8,10 +8,10 @@ export class SubscriptionMiddleware {
      */
     static async checkSubscriptionActive(req: Request, res: Response, next: NextFunction) {
         const user = req.user;
-        
+
         // Usuários comuns ou Super Admin não são bloqueados pelo paywall da adega
         if (!user || user.type === 'super_admin' || user.type === 'admin') return next();
-        
+
         try {
             const company = req.company; // Carregado previamente pelo resolveTenant
             if (!company) return next();
@@ -23,13 +23,17 @@ export class SubscriptionMiddleware {
             const nextPayment = new Date(company.next_payment_date);
 
             if (isTrial && now > nextPayment) {
-                await Company.findByIdAndUpdate(company._id, { 
+                await Company.findByIdAndUpdate(company._id, {
                     subscription_status: 'inactive',
                     status: 'inactive'
                 });
-                
+
                 req.errorStatus = 402; // Payment Required
-                return next(new Error('Seu período experimental (Trial) expirou. Por favor, assine um plano para continuar utilizando a plataforma.'));
+                return next(
+                    new Error(
+                        'Seu período experimental (Trial) expirou. Por favor, assine um plano para continuar utilizando a plataforma.'
+                    )
+                );
             }
 
             // CASO 2: Planos Pagos regulares
@@ -46,13 +50,16 @@ export class SubscriptionMiddleware {
                 // A: Bloqueio por acúmulo de faturas (>= 2)
                 if (unpaidInvoices.length >= 2) {
                     shouldBlock = true;
-                    blockReason = 'Sua conta foi suspensa por possuir 2 ou mais faturas pendentes de pagamento. Regularize seus débitos para continuar utilizando a plataforma.';
+                    blockReason =
+                        'Sua conta foi suspensa por possuir 2 ou mais faturas pendentes de pagamento. Regularize seus débitos para continuar utilizando a plataforma.';
                 }
 
                 // B: Bloqueio por atraso maior que 30 dias em alguma fatura
                 if (!shouldBlock && unpaidInvoices.length > 0) {
                     const oldestInvoice = unpaidInvoices[0];
-                    const daysOverdue = Math.floor((now.getTime() - new Date(oldestInvoice.due_date).getTime()) / (1000 * 60 * 60 * 24));
+                    const daysOverdue = Math.floor(
+                        (now.getTime() - new Date(oldestInvoice.due_date).getTime()) / (1000 * 60 * 60 * 24)
+                    );
                     if (daysOverdue > 30) {
                         shouldBlock = true;
                         blockReason = `Sua conta foi suspensa por possuir uma fatura vencida há mais de 30 dias (vencimento em ${new Date(oldestInvoice.due_date).toLocaleDateString('pt-BR')}). Regularize para reativar seu acesso.`;
@@ -61,7 +68,7 @@ export class SubscriptionMiddleware {
 
                 if (shouldBlock) {
                     if (company.subscription_status !== 'inactive') {
-                        await Company.findByIdAndUpdate(company._id, { 
+                        await Company.findByIdAndUpdate(company._id, {
                             subscription_status: 'inactive',
                             status: 'inactive'
                         });
@@ -73,7 +80,7 @@ export class SubscriptionMiddleware {
 
             // Se o estabelecimento estava inativo mas agora está em dia, reativa automaticamente
             if (company.subscription_status === 'inactive') {
-                await Company.findByIdAndUpdate(company._id, { 
+                await Company.findByIdAndUpdate(company._id, {
                     subscription_status: 'active',
                     status: 'active'
                 });

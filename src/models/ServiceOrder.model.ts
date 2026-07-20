@@ -1,7 +1,7 @@
 import { Schema, Document, model, Types } from 'mongoose';
 
 export interface ITimelineEvent {
-    status: 'AGENDADO' | 'EM_DESLOCAMENTO' | 'CHECK_IN' | 'EM_EXECUCAO' | 'CONCLUIDO' | 'CANCELADO';
+    status: 'SOLICITADO' | 'DATA_SUGERIDA' | 'PROPOSTO' | 'APROVADO' | 'AGENDADO' | 'EM_DESLOCAMENTO' | 'CHECK_IN' | 'EM_EXECUCAO' | 'CONCLUIDO' | 'CANCELADO' | 'RECUSADO';
     timestamp: Date;
     location?: { lat: number; lng: number };
     notes?: string;
@@ -14,7 +14,7 @@ export interface IServiceOrder {
     collaborator_id?: Types.ObjectId;
     scheduled_date?: Date;
     
-    current_status: 'AGENDADO' | 'EM_DESLOCAMENTO' | 'CHECK_IN' | 'EM_EXECUCAO' | 'CONCLUIDO' | 'CANCELADO';
+    current_status: 'SOLICITADO' | 'DATA_SUGERIDA' | 'PROPOSTO' | 'APROVADO' | 'AGENDADO' | 'EM_DESLOCAMENTO' | 'CHECK_IN' | 'EM_EXECUCAO' | 'CONCLUIDO' | 'CANCELADO' | 'RECUSADO';
     timeline: ITimelineEvent[];
     
     checkin_location?: { lat: number; lng: number };
@@ -30,6 +30,13 @@ export interface IServiceOrder {
     zone?: string;
     address_override?: string;
     observations?: string;
+
+    // Campos comerciais e de acompanhante adicionados
+    client_price?: number;
+    client_price_addition?: number;
+    technician_price?: number;
+    requested_by?: string;
+    contract_type?: 'subscription' | 'avulso';
     
     createdAt: Date;
     updatedAt: Date;
@@ -38,7 +45,11 @@ export interface IServiceOrder {
 export interface IServiceOrderDocument extends IServiceOrder, Document {}
 
 const TimelineEventSchema = new Schema<ITimelineEvent>({
-    status: { type: String, enum: ['AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO', 'CONCLUIDO', 'CANCELADO'], required: true },
+    status: { 
+        type: String, 
+        enum: ['SOLICITADO', 'DATA_SUGERIDA', 'PROPOSTO', 'APROVADO', 'AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO', 'CONCLUIDO', 'CANCELADO', 'RECUSADO'], 
+        required: true 
+    },
     timestamp: { type: Date, required: true },
     location: {
         lat: { type: Number },
@@ -55,7 +66,11 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
         collaborator_id: { type: Schema.Types.ObjectId, ref: 'User', required: false },
         scheduled_date: { type: Date },
         
-        current_status: { type: String, enum: ['AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO', 'CONCLUIDO', 'CANCELADO'], default: 'AGENDADO' },
+        current_status: { 
+            type: String, 
+            enum: ['SOLICITADO', 'DATA_SUGERIDA', 'PROPOSTO', 'APROVADO', 'AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO', 'CONCLUIDO', 'CANCELADO', 'RECUSADO'], 
+            default: 'SOLICITADO' 
+        },
         timeline: { type: [TimelineEventSchema], default: [] },
         
         checkin_location: {
@@ -73,7 +88,14 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
         fuel_cost: { type: String },
         zone: { type: String },
         address_override: { type: String },
-        observations: { type: String }
+        observations: { type: String },
+
+        // Mapeamento no banco
+        client_price: { type: Number, default: 0 },
+        client_price_addition: { type: Number, default: 0 },
+        technician_price: { type: Number, default: 0 },
+        requested_by: { type: String },
+        contract_type: { type: String, enum: ['subscription', 'avulso'], default: 'avulso' }
     },
     {
         timestamps: true
