@@ -1,4 +1,4 @@
-﻿import { getMessaging, Message } from 'firebase-admin/messaging';
+import { getMessaging, Message } from 'firebase-admin/messaging';
 import mongoose from 'mongoose';
 import User from '../models/user.model';
 import Company from '../models/company.model';
@@ -213,6 +213,109 @@ export class NotificationService {
             });
         } catch (error) {
             console.error('⚠️ [NotificationService]: Erro ao enviar push de falha de pagamento:', error);
+        }
+    }
+
+    /**
+     * Envia push de notificação centralizado para os envolvidos na Ordem de Serviço
+     */
+    static async sendServiceOrderPush(orderId: string, actionType: string, customText?: string) {
+        try {
+            const ServiceOrderModel = mongoose.connection.model('ServiceOrder');
+            const UserModel = mongoose.connection.model('users');
+
+            const order = await ServiceOrderModel.findById(orderId)
+                .populate('company_id')
+                .populate('unit_id')
+                .populate('service_id')
+                .populate('collaborator_id')
+                .lean() as any;
+
+            if (!order) return;
+
+            const serviceName = order.service_id?.name || 'Serviço';
+            const unitName = order.unit_id?.name || 'Unidade';
+
+            let title = 'Ordem de Serviço';
+            let body = customText || `A Ordem de Serviço de ${serviceName} foi atualizada.`;
+
+            switch (actionType) {
+                case 'SOLICITADO':
+                    title = 'Nova OS Solicitada 📝';
+                    body = `Uma nova solicitação de ${serviceName} foi criada para a unidade ${unitName}.`;
+                    break;
+                case 'AGENDADO':
+                    title = 'OS Agendada 📅';
+                    const techName = order.collaborator_id?.name || 'Técnico designado';
+                    body = `O serviço de ${serviceName} na unidade ${unitName} foi agendado com o técnico ${techName}.`;
+                    break;
+                case 'EM_DESLOCAMENTO':
+                    title = 'Técnico a Caminho 🛵';
+                    body = `O técnico iniciou o deslocamento para realizar o serviço de ${serviceName}.`;
+                    break;
+                case 'TRANSIT_ISSUE':
+                    title = 'Problema no Percurso ⚠️';
+                    body = `O técnico relatou um problema no trajeto para a unidade ${unitName}: ${customText || ''}`;
+                    break;
+                case 'CHECK_IN_ERROR':
+                    title = 'Erro no Check-in ⚠️';
+                    body = `Divergência detectada no check-in do serviço de ${serviceName} na unidade ${unitName}.`;
+                    break;
+                case 'EXECUTION_IMPEDIMENT':
+                    title = 'Execução Impedida ⚠️';
+                    body = `O técnico relatou um impedimento na execução de ${serviceName}: ${customText || ''}`;
+                    break;
+                case 'RELATORIO_CHECKOUT':
+                    title = 'Relatório Disponível para Assinatura 📝';
+                    body = `O serviço de ${serviceName} foi concluído. Aguardando assinatura presencial na unidade ${unitName}.`;
+                    break;
+                case 'CONCLUIDO':
+                    title = 'OS Finalizada 🎉';
+                    body = `O serviço de ${serviceName} na unidade ${unitName} foi finalizado e concluído com sucesso.`;
+                    break;
+            }
+
+            const targets: any[] = [];
+
+            // 1. Lojistas (Dono do estabelecimento)
+            const companyOwners = await UserModel.find({ company_id: order.company_id?._id, type: 'company_owner' }).lean();
+            companyOwners.forEach((owner: any) => {
+                if (owner.fcm_token) targets.push({ token: owner.fcm_token, role: 'owner', email: owner.email });
+            });
+
+            // 2. Técnico
+            if (order.collaborator_id?.fcm_token) {
+                targets.push({ token: order.collaborator_id.fcm_token, role: 'technician', email: order.collaborator_id.email });
+            }
+
+            // 3. Super Admins
+            if (['SOLICITADO', 'TRANSIT_ISSUE', 'CHECK_IN_ERROR', 'EXECUTION_IMPEDIMENT'].includes(actionType)) {
+                const superAdmins = await this.getSuperAdmins();
+                superAdmins.forEach((admin: any) => {
+                    if (admin.fcm_token) targets.push({ token: admin.fcm_token, role: 'super', email: admin.email });
+                });
+            }
+
+            for (const target of targets) {
+                try {
+                    const message: Message = {
+                        notification: { title, body },
+                        data: {
+                            type: 'SERVICE_ORDER_NOTIFICATION',
+                            order_id: String(order._id),
+                            action: actionType
+                        },
+                        token: String(target.token)
+                    };
+                    await getMessaging().send(message);
+                    console.log(`✅ [NotificationService]: Push enviado para ${target.email} (${target.role}) - OS Action: ${actionType}`);
+                } catch (err: any) {
+                    console.error(`❌ Erro ao enviar push para token de ${target.email}:`, err.message);
+                }
+            }
+
+        } catch (error) {
+            console.error('⚠️ [NotificationService]: Erro geral na esteira de push da OS:', error);
         }
     }
 

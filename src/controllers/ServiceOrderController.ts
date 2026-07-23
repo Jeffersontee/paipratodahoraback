@@ -3,6 +3,7 @@ import mongoose, { Types } from 'mongoose';
 import ServiceOrder from '../models/serviceorder.model';
 import Rating from '../models/rating.model';
 import { AuditService } from '../services/AuditService';
+import { NotificationService } from '../services/NotificationService';
 
 export class ServiceOrderController {
     static async list(req: Request, res: Response, next: NextFunction) {
@@ -78,6 +79,7 @@ export class ServiceOrderController {
             });
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), order.current_status);
             const populated = await order.populate([
                 { path: 'company_id' },
                 { path: 'unit_id' },
@@ -142,6 +144,7 @@ export class ServiceOrderController {
             }
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), status);
 
             // Grava Log de Auditoria para transição de status
             await AuditService.log(req, {
@@ -278,6 +281,7 @@ export class ServiceOrderController {
             });
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), 'AGENDADO');
 
             // Grava Log de Auditoria
             await AuditService.log(req, {
@@ -330,6 +334,7 @@ export class ServiceOrderController {
             });
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), 'AGENDADO');
 
             const populated = await order.populate([
                 { path: 'company_id' },
@@ -368,6 +373,7 @@ export class ServiceOrderController {
             });
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), 'SOLICITADO');
 
             const populated = await order.populate([
                 { path: 'company_id' },
@@ -402,6 +408,7 @@ export class ServiceOrderController {
             });
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), 'CANCELADO');
 
             const populated = await order.populate([
                 { path: 'company_id' },
@@ -439,6 +446,7 @@ export class ServiceOrderController {
             });
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), 'TRANSIT_ISSUE', reason);
 
             const populated = await order.populate([
                 { path: 'company_id' },
@@ -475,6 +483,7 @@ export class ServiceOrderController {
             });
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), 'EM_DESLOCAMENTO');
 
             const populated = await order.populate([
                 { path: 'company_id' },
@@ -512,6 +521,7 @@ export class ServiceOrderController {
             });
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), 'EXECUTION_IMPEDIMENT', reason);
 
             const populated = await order.populate([
                 { path: 'company_id' },
@@ -590,6 +600,7 @@ export class ServiceOrderController {
             });
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), 'RELATORIO_CHECKOUT');
 
             const populated = await order.populate([
                 { path: 'company_id' },
@@ -627,6 +638,7 @@ export class ServiceOrderController {
             });
 
             await order.save();
+            NotificationService.sendServiceOrderPush(order._id.toString(), 'CONCLUIDO');
 
             // Salva a avaliação anônima para o técnico se fornecida
             if (stars) {
