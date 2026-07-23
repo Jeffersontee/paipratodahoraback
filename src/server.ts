@@ -183,7 +183,10 @@ export class Server {
             'https://localhost',
             'capacitor://localhost',
             'ionic://localhost',
-            'https://adegapinguinsfront.web.app', // Exemplo de Prod
+            'https://test-72d86d13.web.app',
+            'https://web.app', // <-- ADICIONE ESSE LINK
+            /\.web\.app$/, // 👈 LIBERA AUTOMATICAMENTE QUALQUER LINK DO FIREBASE (.web.app)
+            /\.firebaseapp\.com$/, // 👈 LIBERA O SUBDOMÍNIO SECUNDÁRIO DO FIREBASE
             /\.herokuapp\.com$/ // Permite qualquer subdomínio do Heroku (Staging)
         ];
 
