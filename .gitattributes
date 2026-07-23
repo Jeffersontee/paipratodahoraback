@@ -1,0 +1,7 @@
+# Dizer ao GitHub Linguist para ignorar pastas de ferramentas de IA e scripts locais nas estatísticas de linguagens
+.agents/**/* linguist-vendored
+.impeccable/**/* linguist-vendored
+.codex/**/* linguist-vendored
+
+# Dizer ao GitHub Linguist que arquivos .ts são a linguagem principal
+*.ts linguist-detectable=true
