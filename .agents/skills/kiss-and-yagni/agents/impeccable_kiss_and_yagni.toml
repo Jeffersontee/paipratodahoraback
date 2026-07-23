@@ -1,0 +1,29 @@
+[agent]
+name = "kiss_and_yagni_agent"
+version = "1.0.0"
+description = "Agente especializado para atuar sobre as diretrizes da skill kiss-and-yagni."
+provider = "gemini"
+
+[execution]
+mode = "validation_loop"
+trigger_on = ["git_commit", "manual_invocation"]
+
+[context]
+base_skill = "../SKILL.md"
+reference_dir = "../references/"
+
+[scope]
+include_extensions = [".ts", ".html", ".scss", ".json"]
+exclude_paths = [
+    "node_modules/**",
+    "www/**",
+    ".angular/**"
+]
+
+[rules]
+check_compliance = true
+
+[output]
+format = "markdown"
+destination = "stdout"
+generate_diff = true

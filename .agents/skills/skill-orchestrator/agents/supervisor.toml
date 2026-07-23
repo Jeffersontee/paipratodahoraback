@@ -1,0 +1,29 @@
+[agent]
+name = "supervisor_gerente"
+version = "1.0.0"
+description = "Agente supervisor e gerente encarregado de ler o catálogo de habilidades na pasta skills/ e coordenar os demais sub-agentes."
+provider = "gemini"
+
+[execution]
+mode = "validation_loop"
+trigger_on = ["git_commit", "manual_invocation"]
+
+[context]
+base_skill = "../SKILL.md"
+reference_dir = "../references/"
+
+[scope]
+include_extensions = [".ts", ".md", ".json"]
+exclude_paths = [
+    "node_modules/**",
+    "www/**",
+    ".angular/**"
+]
+
+[rules]
+check_compliance = true
+
+[output]
+format = "markdown"
+destination = "stdout"
+generate_diff = true
