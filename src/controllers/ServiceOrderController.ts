@@ -248,7 +248,7 @@ export class ServiceOrderController {
 
     static async assignTechnician(req: Request, res: Response, next: NextFunction) {
         try {
-            const { collaborator_id } = req.body;
+            const { collaborator_id, scheduled_date } = req.body;
             const order = await ServiceOrder.findById(req.params.id);
 
             if (!order) {
@@ -268,6 +268,10 @@ export class ServiceOrderController {
                         throw new Error('A troca de técnico só é permitida se faltar mais de 8 horas para o início do atendimento.');
                     }
                 }
+            }
+
+            if (scheduled_date) {
+                order.scheduled_date = new Date(scheduled_date);
             }
 
             const isNewAssignment = !order.collaborator_id;
@@ -325,12 +329,12 @@ export class ServiceOrderController {
                 order.proposed_date = undefined;
             }
             order.schedule_pending_client_approval = false;
-            order.current_status = 'AGENDADO';
+            order.current_status = 'APROVADO';
             
             order.timeline.push({
-                status: 'AGENDADO',
+                status: 'APROVADO',
                 timestamp: new Date(),
-                notes: 'Lojista/User aceitou a nova proposta de data/hora.'
+                notes: 'Lojista/User confirmou e aprovou o agendamento.'
             });
 
             await order.save();
@@ -394,6 +398,7 @@ export class ServiceOrderController {
 
     static async cancelOrder(req: Request, res: Response, next: NextFunction) {
         try {
+            const { reason } = req.body;
             const order = await ServiceOrder.findById(req.params.id);
             if (!order) {
                 req.errorStatus = 404;
@@ -404,7 +409,7 @@ export class ServiceOrderController {
             order.timeline.push({
                 status: 'CANCELADO',
                 timestamp: new Date(),
-                notes: 'Ordem de serviço cancelada pelo solicitante.'
+                notes: reason ? `Ordem de serviço cancelada pelo solicitante. Motivo: ${reason}` : 'Ordem de serviço cancelada pelo solicitante.'
             });
 
             await order.save();
