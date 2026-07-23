@@ -1,7 +1,7 @@
 import { Schema, Document, model, Types } from 'mongoose';
 
 export interface ITimelineEvent {
-    status: 'SOLICITADO' | 'DATA_SUGERIDA' | 'PROPOSTO' | 'APROVADO' | 'AGENDADO' | 'EM_DESLOCAMENTO' | 'CHECK_IN' | 'EM_EXECUCAO' | 'CONCLUIDO' | 'CANCELADO' | 'RECUSADO';
+    status: 'SOLICITADO' | 'DATA_SUGERIDA' | 'PROPOSTO' | 'APROVADO' | 'AGENDADO' | 'EM_DESLOCAMENTO' | 'CHECK_IN' | 'EM_EXECUCAO' | 'RELATORIO_CHECKOUT' | 'AVALIACAO' | 'CONCLUIDO' | 'CANCELADO' | 'RECUSADO';
     timestamp: Date;
     location?: { lat: number; lng: number };
     notes?: string;
@@ -14,7 +14,7 @@ export interface IServiceOrder {
     collaborator_id?: Types.ObjectId;
     scheduled_date?: Date;
     
-    current_status: 'SOLICITADO' | 'DATA_SUGERIDA' | 'PROPOSTO' | 'APROVADO' | 'AGENDADO' | 'EM_DESLOCAMENTO' | 'CHECK_IN' | 'EM_EXECUCAO' | 'CONCLUIDO' | 'CANCELADO' | 'RECUSADO';
+    current_status: 'SOLICITADO' | 'DATA_SUGERIDA' | 'PROPOSTO' | 'APROVADO' | 'AGENDADO' | 'EM_DESLOCAMENTO' | 'CHECK_IN' | 'EM_EXECUCAO' | 'RELATORIO_CHECKOUT' | 'AVALIACAO' | 'CONCLUIDO' | 'CANCELADO' | 'RECUSADO';
     timeline: ITimelineEvent[];
     
     checkin_location?: { lat: number; lng: number };
@@ -31,12 +31,34 @@ export interface IServiceOrder {
     address_override?: string;
     observations?: string;
 
-    // Campos comerciais e de acompanhante adicionados
+    // Campos comerciais e de acompanhante
     client_price?: number;
     client_price_addition?: number;
     technician_price?: number;
     requested_by?: string;
     contract_type?: 'subscription' | 'avulso';
+
+    // Matriz GUT
+    gut_gravity?: number; // 1 a 5
+    gut_urgency?: number; // 1 a 5
+    gut_trend?: number;   // 1 a 5
+    gut_score?: number;   // gravity * urgency * trend
+
+    // Flags de Negociação de Agendamento pelo Lojista/User
+    proposed_date?: Date;
+    schedule_pending_client_approval?: boolean;
+
+    // Controle de Deslocamento e Impedimentos
+    transit_issue_reason?: string;
+    is_transit_impeded?: boolean;
+    impediment_reason?: string;
+    is_execution_impeded?: boolean;
+
+    // Aditivos do Técnico
+    aditives?: {
+        description: string;
+        service_id?: Types.ObjectId;
+    }[];
     
     createdAt: Date;
     updatedAt: Date;
@@ -47,7 +69,7 @@ export interface IServiceOrderDocument extends IServiceOrder, Document {}
 const TimelineEventSchema = new Schema<ITimelineEvent>({
     status: { 
         type: String, 
-        enum: ['SOLICITADO', 'DATA_SUGERIDA', 'PROPOSTO', 'APROVADO', 'AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO', 'CONCLUIDO', 'CANCELADO', 'RECUSADO'], 
+        enum: ['SOLICITADO', 'DATA_SUGERIDA', 'PROPOSTO', 'APROVADO', 'AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO', 'RELATORIO_CHECKOUT', 'AVALIACAO', 'CONCLUIDO', 'CANCELADO', 'RECUSADO'], 
         required: true 
     },
     timestamp: { type: Date, required: true },
@@ -68,7 +90,7 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
         
         current_status: { 
             type: String, 
-            enum: ['SOLICITADO', 'DATA_SUGERIDA', 'PROPOSTO', 'APROVADO', 'AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO', 'CONCLUIDO', 'CANCELADO', 'RECUSADO'], 
+            enum: ['SOLICITADO', 'DATA_SUGERIDA', 'PROPOSTO', 'APROVADO', 'AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO', 'RELATORIO_CHECKOUT', 'AVALIACAO', 'CONCLUIDO', 'CANCELADO', 'RECUSADO'], 
             default: 'SOLICITADO' 
         },
         timeline: { type: [TimelineEventSchema], default: [] },
@@ -95,7 +117,29 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
         client_price_addition: { type: Number, default: 0 },
         technician_price: { type: Number, default: 0 },
         requested_by: { type: String },
-        contract_type: { type: String, enum: ['subscription', 'avulso'], default: 'avulso' }
+        contract_type: { type: String, enum: ['subscription', 'avulso'], default: 'avulso' },
+
+        // Matriz GUT
+        gut_gravity: { type: Number, min: 1, max: 5 },
+        gut_urgency: { type: Number, min: 1, max: 5 },
+        gut_trend: { type: Number, min: 1, max: 5 },
+        gut_score: { type: Number, default: 1 },
+
+        // Flags de Negociação de Agendamento pelo Lojista/User
+        proposed_date: { type: Date },
+        schedule_pending_client_approval: { type: Boolean, default: false },
+
+        // Controle de Deslocamento e Impedimentos
+        transit_issue_reason: { type: String },
+        is_transit_impeded: { type: Boolean, default: false },
+        impediment_reason: { type: String },
+        is_execution_impeded: { type: Boolean, default: false },
+
+        // Aditivos do Técnico
+        aditives: [{
+            description: { type: String, required: true },
+            service_id: { type: Schema.Types.ObjectId, ref: 'Service', required: false }
+        }]
     },
     {
         timestamps: true
