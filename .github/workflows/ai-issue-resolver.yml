@@ -1,0 +1,31 @@
+name: AI Issue Resolver
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  resolve_issue:
+    if: github.event.label.name == 'ai-solve'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: Executar Agente Autônomo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          # O script lê o número da issue a partir do contexto do evento do GitHub
+          npx ts-node --project .agents/tsconfig.scripts.json .agents/skills/skill-orchestrator/scripts/solve-issue.ts --issue-number ${{ github.event.issue.number }}
