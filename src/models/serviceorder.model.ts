@@ -30,6 +30,7 @@ export interface IServiceOrder {
     zone?: string;
     address_override?: string;
     observations?: string;
+    checkout_time?: Date;
 
     // Campos comerciais e de acompanhante
     client_price?: number;
@@ -100,6 +101,7 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
             lng: { type: Number }
         },
         checkin_time: { type: Date },
+        checkout_time: { type: Date },
         
         images_url: { type: [String], default: [] },
         report_pdf_url: { type: String },
