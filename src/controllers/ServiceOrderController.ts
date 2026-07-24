@@ -182,12 +182,16 @@ export class ServiceOrderController {
             // Prevent overriding critical fields directly via generic update
             delete updateData.timeline;
 
-            if (
-                updateData.collaborator_id === '' ||
-                updateData.collaborator_id === 'null' ||
-                !updateData.collaborator_id
-            ) {
-                updateData.collaborator_id = null;
+            if (updateData.collaborator_id !== undefined) {
+                if (
+                    updateData.collaborator_id === '' ||
+                    updateData.collaborator_id === 'null' ||
+                    updateData.collaborator_id === null
+                ) {
+                    updateData.collaborator_id = null;
+                }
+            } else {
+                delete updateData.collaborator_id;
             }
 
             const order = await ServiceOrder.findByIdAndUpdate(req.params.id, updateData, {
@@ -635,6 +639,8 @@ export class ServiceOrderController {
 
             order.current_status = 'CONCLUIDO';
             order.follower_signature = follower_signature;
+            order.client_comment = comment;
+            order.client_stars = stars ? Number(stars) : undefined;
             
             order.timeline.push({
                 status: 'CONCLUIDO',
@@ -681,6 +687,10 @@ export class ServiceOrderController {
             if (hideClientPrice) {
                 delete doc.client_price;
                 delete doc.client_price_addition;
+                if (!doc.show_to_technician) {
+                    delete doc.client_comment;
+                    delete doc.client_stars;
+                }
             }
             return doc;
         };

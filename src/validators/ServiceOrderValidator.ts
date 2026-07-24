@@ -34,7 +34,10 @@ export class ServiceOrderValidator {
             body('collaborator_id')
                 .optional({ nullable: true })
                 .customSanitizer(value => {
-                    if (value === '' || value === 'null' || value === null || value === undefined) {
+                    if (value === undefined) {
+                        return undefined;
+                    }
+                    if (value === '' || value === 'null' || value === null) {
                         return null;
                     }
                     return value;

@@ -39,6 +39,9 @@ export interface IServiceOrder {
     technician_price?: number;
     requested_by?: string;
     contract_type?: 'subscription' | 'avulso';
+    client_comment?: string;
+    client_stars?: number;
+    show_to_technician?: boolean;
 
     // Matriz GUT
     gut_gravity?: number; // 1 a 5
@@ -122,6 +125,9 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
         technician_price: { type: Number, default: 0 },
         requested_by: { type: String },
         contract_type: { type: String, enum: ['subscription', 'avulso'], default: 'avulso' },
+        client_comment: { type: String, required: false },
+        client_stars: { type: Number, required: false },
+        show_to_technician: { type: Boolean, default: false },
 
         // Matriz GUT
         gut_gravity: { type: Number, min: 1, max: 5 },
