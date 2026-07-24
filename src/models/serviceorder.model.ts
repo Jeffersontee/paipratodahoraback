@@ -23,6 +23,7 @@ export interface IServiceOrder {
     images_url?: string[];
     report_pdf_url?: string;
     follower_signature?: string;
+    technician_signature?: string;
     notes?: string;
     time_spent?: string;
     km_driven?: string;
@@ -106,6 +107,7 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
         images_url: { type: [String], default: [] },
         report_pdf_url: { type: String },
         follower_signature: { type: String },
+        technician_signature: { type: String },
         notes: { type: String },
         time_spent: { type: String },
         km_driven: { type: String },
