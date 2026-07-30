@@ -343,7 +343,7 @@ export class SubscriptionController {
             const gateway = PaymentProvider.getGateway(superAdmin.global_payment_config);
             const externalReference = `SUB_${subscription._id}__${companyId}`;
 
-            console.log(`[SaaS Billing] Gerando PIX de R$ ${plan.price} para adega: ${company.short_name}`);
+            console.log(`[SaaS Billing] Gerando PIX de R$ ${plan.price} para Estabelecimentos: ${company.short_name}`);
 
             const pixResponse = await gateway.createPix({
                 name: name || user.name || company.name || 'Empresa',
