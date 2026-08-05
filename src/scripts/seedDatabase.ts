@@ -315,16 +315,18 @@ async function seedDatabase() {
     // 7. HISTÓRICO DE VISITAS E SOLICITAÇÕES (SERVICE ORDERS)
     const today = new Date();
 
-    const d1 = new Date();
-    d1.setDate(today.getDate() - 25);
-    const d2 = new Date();
-    d2.setDate(today.getDate() - 18);
-    const d3 = new Date();
-    d3.setDate(today.getDate() - 12);
-    const d4 = new Date();
-    d4.setDate(today.getDate() - 6);
-    const d5 = new Date();
-    d5.setDate(today.getDate() - 2);
+    const d1 = new Date('2026-01-15T10:00:00Z');
+    const d2 = new Date('2026-02-10T14:00:00Z');
+    const d3 = new Date('2026-03-22T09:00:00Z');
+    const d4 = new Date('2026-04-05T13:30:00Z');
+    const d5 = new Date('2026-05-18T16:00:00Z');
+    const d6 = new Date('2026-06-20T10:00:00Z');
+    const d7 = new Date('2026-07-12T11:00:00Z');
+    const d8 = new Date('2026-08-01T08:00:00Z');
+    const d9 = new Date('2026-09-10T15:00:00Z');
+    const d10 = new Date('2026-10-25T14:00:00Z');
+    const d11 = new Date('2026-11-05T09:00:00Z');
+    const d12 = new Date('2026-12-18T16:00:00Z');
 
     await ServiceOrder.insertMany([
         // ZÉ DELIVERY - Vila Ré
@@ -424,15 +426,50 @@ async function seedDatabase() {
             company_id: zeDelivery._id,
             unit_id: itaquera._id,
             service_id: servicesZD[2]._id,
-            scheduled_date: new Date(today.getTime() + 86400000), // amanhã
+            scheduled_date: d6,
             current_status: 'AGENDADO',
             zone: 'ZL',
             address_override: 'Av. Itaquera, 5000 - Itaquera',
             notes: 'Revisão do portão automático da garagem.',
-            timeline: [{ status: 'AGENDADO', timestamp: today }]
+            timeline: [{ status: 'AGENDADO', timestamp: d6 }]
         },
-
-        // FLASH LTDA - Paulista
+        // Mais dados espalhados em 2026 para ZE DELIVERY
+        {
+            company_id: zeDelivery._id,
+            unit_id: VilaRe._id,
+            service_id: servicesZD[0]._id,
+            collaborator_id: carlosTecnicoZD._id,
+            scheduled_date: d7,
+            current_status: 'AGENDADO',
+            zone: 'ZL',
+            address_override: 'Rua Itinguçu, 1000 - Vila Ré',
+            notes: 'Revisão agendada.',
+            timeline: [{ status: 'AGENDADO', timestamp: d7 }]
+        },
+        {
+            company_id: zeDelivery._id,
+            unit_id: pinheiros._id,
+            service_id: servicesZD[1]._id,
+            collaborator_id: carlosTecnicoZD._id,
+            scheduled_date: d8,
+            current_status: 'AGENDADO',
+            zone: 'ZO',
+            address_override: 'Rua dos Pinheiros, 450 - Pinheiros',
+            notes: 'Vazamento crônico.',
+            timeline: [{ status: 'AGENDADO', timestamp: d8 }]
+        },
+        {
+            company_id: zeDelivery._id,
+            unit_id: pinheiros._id,
+            service_id: servicesZD[2]._id,
+            collaborator_id: carlosTecnicoZD._id,
+            scheduled_date: d10,
+            current_status: 'AGENDADO',
+            zone: 'ZO',
+            address_override: 'Rua dos Pinheiros, 450 - Pinheiros',
+            notes: 'Portão quebrado.',
+            timeline: [{ status: 'AGENDADO', timestamp: d10 }]
+        },
         {
             company_id: flashLtda._id,
             unit_id: paulista._id,
@@ -493,15 +530,37 @@ async function seedDatabase() {
             company_id: flashLtda._id,
             unit_id: joaoDias._id,
             service_id: servicesFlash[0]._id,
-            scheduled_date: today,
+            scheduled_date: d9,
             current_status: 'EM_DESLOCAMENTO',
             zone: 'ZS',
             address_override: 'Estrada de Itapecerica, 500 - Vila Andrade',
             notes: 'Lâmpadas piscando no escritório principal.',
             timeline: [
-                { status: 'AGENDADO', timestamp: today },
-                { status: 'EM_DESLOCAMENTO', timestamp: today }
+                { status: 'AGENDADO', timestamp: d9 },
+                { status: 'EM_DESLOCAMENTO', timestamp: d9 }
             ]
+        },
+        {
+            company_id: flashLtda._id,
+            unit_id: paulista._id,
+            service_id: servicesFlash[2]._id,
+            scheduled_date: d11,
+            current_status: 'AGENDADO',
+            zone: 'Centro',
+            address_override: 'Avenida Paulista, 1000 - Bela Vista',
+            notes: 'Fechadura danificada.',
+            timeline: [{ status: 'AGENDADO', timestamp: d11 }]
+        },
+        {
+            company_id: flashLtda._id,
+            unit_id: joaoDias._id,
+            service_id: servicesFlash[1]._id,
+            scheduled_date: d12,
+            current_status: 'AGENDADO',
+            zone: 'ZS',
+            address_override: 'Estrada de Itapecerica, 500 - Vila Andrade',
+            notes: 'Ralo entupido.',
+            timeline: [{ status: 'AGENDADO', timestamp: d12 }]
         }
     ]);
 

@@ -3,19 +3,18 @@ import mongoose from 'mongoose';
 import User from '../models/user.model';
 import Company from '../models/company.model';
 import GlobalOrder from '../models/global.model';
+import ServiceOrder from '../models/serviceorder.model';
 import { NodeMailer } from './integrations/NodeMailer';
 import { AuditService } from './AuditService';
 
 export class NotificationService {
     // Interface interna para tipar usuários vindos do HubDB via .lean()
     private static async getUser(userId: string) {
-        const UserModel = mongoose.connection.model('users', User.schema);
-        return (await UserModel.findById(userId).lean()) as any;
+        return (await User.findById(userId).lean()) as any;
     }
 
     private static async getSuperAdmins() {
-        const UserModel = mongoose.connection.model('users', User.schema);
-        return await UserModel.find({ type: 'super_admin', status: 'active' }).lean();
+        return await User.find({ type: 'super_admin', status: 'active' }).lean();
     }
 
     /**
@@ -37,8 +36,7 @@ export class NotificationService {
                 // Tenta achar o company_id associado ao último pedido deste usuário
                 let companyId = null;
                 try {
-                    const GlobalOrderModel = mongoose.connection.model('global_orders', GlobalOrder.schema);
-                    const lastOrder = await GlobalOrderModel.findOne({ customer_id: userId })
+                    const lastOrder = await GlobalOrder.findOne({ customer_id: userId })
                         .sort({ created_at: -1 })
                         .lean();
                     if (lastOrder) {
@@ -96,13 +94,10 @@ export class NotificationService {
     static async sendLowStockAlert(companyId: string, itemName: string, currentStock: number) {
         try {
             // Busca no Banco Central
-            const CompanyModel = mongoose.connection.model('companys', Company.schema);
-            const UserModel = mongoose.connection.model('users', User.schema);
-
-            const company: any = await CompanyModel.findById(companyId).lean();
+            const company: any = await Company.findById(companyId).lean();
             if (!company) return;
 
-            const adminUser: any = await UserModel.findById((await mongoose.connection.model('users').findOne({company_id: company._id, type: 'company_owner'}))?._id).lean();
+            const adminUser: any = await User.findById((await User.findOne({company_id: company._id, type: 'company_owner'}))?._id).lean();
             if (!adminUser || !adminUser.fcm_token) return;
 
             const message: Message = {
@@ -135,7 +130,7 @@ export class NotificationService {
             if (!est) return;
 
             // Busca o usuário admin do estabelecimento para pegar o fcm_token
-            const user = await this.getUser(String((await mongoose.connection.model('users').findOne({company_id: est._id, type: 'company_owner'}))?._id));
+            const user = await this.getUser(String((await User.findOne({company_id: est._id, type: 'company_owner'}))?._id));
             if (!user || !user.fcm_token) return;
 
             console.log(`📡 [FCM]: Usando token para ${user.email}: ${user.fcm_token.substring(0, 15)}...`);
@@ -183,11 +178,10 @@ export class NotificationService {
      */
     static async sendPaymentProviderErrorPush(companyId: string, providerName: string) {
         try {
-            const CompanyModel = mongoose.connection.model('companys', Company.schema);
-            const company: any = await CompanyModel.findById(companyId).lean();
+            const company: any = await Company.findById(companyId).lean();
             if (!company) return;
 
-            const user = await this.getUser(String((await mongoose.connection.model('users').findOne({company_id: company._id, type: 'company_owner'}))?._id));
+            const user = await this.getUser(String((await User.findOne({company_id: company._id, type: 'company_owner'}))?._id));
             if (!user || !user.fcm_token) return;
 
             const message: Message = {
@@ -221,10 +215,7 @@ export class NotificationService {
      */
     static async sendServiceOrderPush(orderId: string, actionType: string, customText?: string) {
         try {
-            const ServiceOrderModel = mongoose.connection.model('ServiceOrder');
-            const UserModel = mongoose.connection.model('users');
-
-            const order = await ServiceOrderModel.findById(orderId)
+            const order = await ServiceOrder.findById(orderId)
                 .populate('company_id')
                 .populate('unit_id')
                 .populate('service_id')
@@ -278,7 +269,7 @@ export class NotificationService {
             const targets: any[] = [];
 
             // 1. Lojistas (Dono do estabelecimento)
-            const companyOwners = await UserModel.find({ company_id: order.company_id?._id, type: 'company_owner' }).lean();
+            const companyOwners = await User.find({ company_id: order.company_id?._id, type: 'company_owner' }).lean();
             companyOwners.forEach((owner: any) => {
                 if (owner.fcm_token) targets.push({ token: owner.fcm_token, role: 'owner', email: owner.email });
             });
@@ -392,13 +383,10 @@ export class NotificationService {
      */
     static async sendInvoiceOverduePush(companyId: string, amount: number, daysOverdue: number) {
         try {
-            const CompanyModel = mongoose.connection.model('companys', Company.schema);
-            const UserModel = mongoose.connection.model('users', User.schema);
-
-            const company: any = await CompanyModel.findById(companyId).lean();
+            const company: any = await Company.findById(companyId).lean();
             if (!company) return;
 
-            const adminUser: any = await UserModel.findById((await mongoose.connection.model('users').findOne({company_id: company._id, type: 'company_owner'}))?._id).lean();
+            const adminUser: any = await User.findById((await User.findOne({company_id: company._id, type: 'company_owner'}))?._id).lean();
             if (!adminUser || !adminUser.fcm_token) return;
 
             const message: Message = {

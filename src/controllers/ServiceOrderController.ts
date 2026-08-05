@@ -19,6 +19,16 @@ export class ServiceOrderController {
                 filter.collaborator_id = req.query.collaborator_id;
             }
 
+            if (req.query.start_date || req.query.end_date) {
+                filter.scheduled_date = {};
+                if (req.query.start_date) {
+                    filter.scheduled_date.$gte = new Date(req.query.start_date as string);
+                }
+                if (req.query.end_date) {
+                    filter.scheduled_date.$lte = new Date(req.query.end_date as string);
+                }
+            }
+
             const orders = await ServiceOrder.find(filter)
                 .populate('company_id', 'name short_name')
                 .populate('unit_id', 'name address')
