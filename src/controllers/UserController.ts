@@ -1118,6 +1118,25 @@ export class UserController {
         }
     }
 
+    static async getStaffById(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = await User.findById(req.params.id)
+                .populate('company_id', 'name')
+                .select('-password -verification_token');
+                
+            if (!user) {
+                return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: user
+            });
+        } catch (e: any) {
+            next(e);
+        }
+    }
+
     static async createStaff(req: Request, res: Response, next: NextFunction) {
         try {
             const { name, email, phone, password, type, company_id, status } = req.body;

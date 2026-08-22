@@ -21,6 +21,7 @@ class UserRouter {
         // this.router.get('/verify/resetPasswordToken', UserController.verifyResetPasswordToken);
         this.router.get('/profile', GlobalMiddleWare.auth, UserController.profile);
         this.router.get('/staff', GlobalMiddleWare.auth, UserController.listStaff);
+        this.router.get('/staff/:id', GlobalMiddleWare.auth, UserController.getStaffById);
     }
 
     postRoutes() {
