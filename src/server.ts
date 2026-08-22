@@ -24,11 +24,12 @@ import * as path from 'path'; // Adicione este import no topo
 // import ReportRouter from './routers/ReportRouter';
 
 // import PlanRouter from './routers/PlanRouter';
-// import SubscriptionRouter from './routers/SubscriptionRouter';
-// import InvoiceRouter from './routers/InvoiceRouter';
-// import AnalyticRouter from './routers/AnalyticRouter';
-// import PaymentRouter from './routers/PaymentRouter';
-// import AuditRouter from './routers/AuditRouter';
+//import SubscriptionRouter from './routers/SubscriptionRouter';
+//import InvoiceRouter from './routers/InvoiceRouter';
+//import AnalyticRouter from './routers/AnalyticRouter';
+import AuditRouter from './routers/AuditRouter';
+//import PaymentOnboardingRouter from './routers/PaymentOnboardingRouter';
+import HelpRouter from './routers/HelpRouter';
 // import RatingRouter from './routers/RatingRouter';
 // import { PaymentOnboardingController } from './controllers/PaymentOnboardingController';
 // import PromotionRouter from './routers/PromotionRouter';
@@ -251,8 +252,10 @@ export class Server {
         // this.app.use('/api/plans', PlanRouter);
         // this.app.use('/api/subscriptions', SubscriptionRouter);
         // this.app.use('/api/invoices', InvoiceRouter);
-        // this.app.use('/api/analytics', AnalyticRouter);
-        // this.app.use('/api/audits', AuditRouter);
+        //this.app.use('/api/analytics', AnalyticRouter);
+        this.app.use('/api/audits', AuditRouter);
+        //this.app.use('/api/onboarding', PaymentOnboardingRouter);
+        this.app.use('/api/help', HelpRouter);
         // this.app.use('/api/ratings', RatingRouter);
         // this.app.use('/api/promotions', PromotionRouter);
         // this.app.use('/api/loyalty', LoyaltyRouter);
