@@ -52,7 +52,7 @@ export class CollaboratorController {
                 collaboratorData.company_id = company_id;
             }
 
-            if (role === 'technician' && technician_profile) {
+            if ((role === 'technician' || role === 'técnico') && technician_profile) {
                 collaboratorData.technician_profile = technician_profile;
             }
 
@@ -116,7 +116,7 @@ export class CollaboratorController {
     static async updateCollaborator(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            const { name, email, phone, role, status, password } = req.body;
+            const { name, email, phone, role, status, password, technician_profile } = req.body;
 
             const collaborator = await User.findOne({ _id: id, type: 'collaborator' });
 
@@ -136,6 +136,12 @@ export class CollaboratorController {
 
             if (password) {
                 collaborator.password = await Utils.encryptPassword(password);
+            }
+
+            if ((role === 'technician' || role === 'técnico') && technician_profile) {
+                collaborator.technician_profile = technician_profile;
+            } else if (role !== 'technician' && role !== 'técnico') {
+                collaborator.technician_profile = undefined;
             }
 
             const updatedCollaborator = await collaborator.save();
