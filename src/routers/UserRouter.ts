@@ -36,19 +36,20 @@ class UserRouter {
 
     patchRoutes() {
         this.router.patch('/staff/:id', GlobalMiddleWare.auth, UserController.updateStaff);
-        // this.router.patch('/reset/password', UserController.resetPassword);
-        // this.router.patch('/verify/emailToken', GlobalMiddleWare.auth, UserController.verifyUserEmailToken);
-        // this.router.patch('/update/phone', GlobalMiddleWare.auth, UserController.updatePhoneNumber);
-        // this.router.patch('/update/profile', GlobalMiddleWare.auth, UserController.updateUserProfile);
+        this.router.patch('/reset/password', UserController.resetPassword);
+        this.router.patch('/verify/emailToken', GlobalMiddleWare.auth, UserController.verifyUserEmailToken);
+        this.router.patch('/update/phone', GlobalMiddleWare.auth, UserController.updatePhoneNumber);
+        this.router.patch('/update/profile', GlobalMiddleWare.auth, UserController.updateUserProfile);
     }
 
     putRoutes() {
-        this.router.put('/update/profilePic', GlobalMiddleWare.auth, new Utils().multer.single('profileImages'), UserController.updateUserProfilePic);
-        this.router.patch(
-            '/update/fcm-token',
+        this.router.put(
+            '/update/profilePic',
             GlobalMiddleWare.auth,
-            UserController.updateFcmToken
+            new Utils().multer.single('profileImages'),
+            UserController.updateUserProfilePic
         );
+        this.router.patch('/update/fcm-token', GlobalMiddleWare.auth, UserController.updateFcmToken);
     }
 
     deleteRoutes() {

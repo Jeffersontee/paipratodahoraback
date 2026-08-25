@@ -1139,7 +1139,7 @@ export class UserController {
 
     static async createStaff(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, email, phone, password, type, company_id, status, permissions } = req.body;
+            const { name, email, phone, password, type, role, technician_profile, company_id, status, permissions } = req.body;
 
             const existingUser = await User.findOne({ email });
             if (existingUser) {
@@ -1162,7 +1162,9 @@ export class UserController {
                 email_verified: true,
                 verification_token,
                 verification_token_time: Date.now() + new Utils().MAX_TOKEN_TIME,
-                permissions: permissions || []
+                permissions: permissions || [],
+                role: role || undefined,
+                technician_profile: technician_profile || undefined
             });
 
             await newUser.save();
@@ -1178,7 +1180,7 @@ export class UserController {
 
     static async updateStaff(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, email, phone, type, company_id, status, password, permissions } = req.body;
+            const { name, email, phone, type, role, technician_profile, company_id, status, password, permissions } = req.body;
 
             const user = await User.findById(req.params.id);
             if (!user) {
@@ -1191,6 +1193,10 @@ export class UserController {
             user.type = type || user.type;
             user.company_id = company_id || null;
             user.status = status || user.status;
+            
+            if (role !== undefined) user.role = role;
+            if (technician_profile !== undefined) user.technician_profile = technician_profile;
+
             if (permissions !== undefined) {
                 user.permissions = permissions;
             }
