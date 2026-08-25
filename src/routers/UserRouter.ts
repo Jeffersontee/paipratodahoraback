@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { UserValidator } from '../validators/UserValidator';
 import { UserController } from '../controllers/UserController';
 import { GlobalMiddleWare } from '../middlewares/GlobalMiddleware';
+import { Utils } from '../utils/Utils';
 
 class UserRouter {
     public router: Router;
@@ -42,7 +43,7 @@ class UserRouter {
     }
 
     putRoutes() {
-        // this.router.put('/update/profilePic', GlobalMiddleWare.auth, UserController.updateUserProfilePic);
+        this.router.put('/update/profilePic', GlobalMiddleWare.auth, new Utils().multer.single('profileImages'), UserController.updateUserProfilePic);
         this.router.patch(
             '/update/fcm-token',
             GlobalMiddleWare.auth,
