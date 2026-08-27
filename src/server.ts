@@ -42,7 +42,7 @@ import UnitRouter from './routers/UnitRouter';
 import ServiceOrderRouter from './routers/ServiceOrderRouter';
 import DashboardRouter from './routers/DashboardRouter';
 import AppConfigRouter from './routers/AppConfigRouter';
-
+import AppearanceRouter from './routers/AppearanceRouter';
 export class Server {
     public app: express.Application = express();
 
@@ -268,6 +268,7 @@ export class Server {
         this.app.use('/api/service-orders', ServiceOrderRouter);
         this.app.use('/api/dashboard', DashboardRouter);
         this.app.use('/api/configs', AppConfigRouter);
+        this.app.use('/api/appearance', AppearanceRouter);
 
         // Alias para capturar callbacks de OAuth que não possuem o prefixo /api/payments
         // Isso resolve o erro 404 quando o Redirect URI é configurado na raiz no painel do MP
