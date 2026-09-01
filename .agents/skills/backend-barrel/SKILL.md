@@ -2,9 +2,8 @@
 name: backend-barrel
 description: Guia prático sobre o padrão de exportação unificada (Barrel) para Middlewares Globais no Backend.
 ---
-# Skill: Padrão Barrel no Backend
 
-Esta skill descreve o padrão de fatiamento e exportação unificada (Barrel) para manter os middlewares globais modulares, testáveis e sem impacto nos imports das rotas.
+Esta skill fornece diretrizes sobre **backend-barrel**.
 
-## Referências
-- [Padrão Barrel para Middlewares Globais](file:///c:/workspace/BravosBravoV2/BravoBravoback/.agents/skills/backend-barrel/references/MIDDLEWARE_BARREL.md)
+Por favor, leia a documentação completa no arquivo de referência:
+[MIDDLEWARE_BARREL.md](file:///c:/workspace/adegaspinguinsV2/adegapinguinsback/.agents/skills/backend-barrel/references/MIDDLEWARE_BARREL.md)

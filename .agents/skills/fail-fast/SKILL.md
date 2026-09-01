@@ -3,6 +3,7 @@ name: fail-fast
 description: Princípio Fail Fast — falhar cedo e explicitamente com validações na borda, early returns e guards defensivos.
 ---
 
-# Fail Fast
+Esta skill fornece diretrizes sobre **fail-fast**.
 
-Referência completa: [FAIL_FAST.md](./references/FAIL_FAST.md)
+Por favor, leia a documentação completa no arquivo de referência:
+[FAIL_FAST.md](file:///c:/workspace/adegaspinguinsV2/adegapinguinsback/.agents/skills/fail-fast/references/FAIL_FAST.md)

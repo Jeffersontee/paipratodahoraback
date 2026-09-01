@@ -24,6 +24,12 @@ export interface IUserDocument extends Document {
     is_available_now: boolean;
   };
   global_payment_config?: any;
+  privacy_consent?: {
+    accepted: boolean;
+    version: string;
+    accepted_at: Date;
+    ip_address?: string;
+  };
   created_at: Date;
   updated_at: Date;
 }
@@ -53,6 +59,12 @@ const UserSchema = new Schema<IUserDocument>(
       is_available_now: { type: Boolean, default: false }
     },
     global_payment_config: { type: Schema.Types.Mixed, required: false },
+    privacy_consent: {
+      accepted: { type: Boolean, default: true },
+      version: { type: String, default: 'v1.0.2026' },
+      accepted_at: { type: Date, default: Date.now },
+      ip_address: { type: String, required: false }
+    }
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }

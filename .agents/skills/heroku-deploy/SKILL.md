@@ -1,9 +1,9 @@
 ---
 name: heroku-deploy
-description: Procedimento global de deploy, configuração de secrets no GitHub Actions, logs e variáveis de ambiente na Heroku.
+description: Diretrizes de padronização para a skill heroku-deploy.
 ---
-# Heroku Deploy Skill
 
-Esta skill descreve os procedimentos detalhados para deploy contínuo (CI/CD) no Heroku utilizando GitHub Actions, diagnóstico de logs e configuração de variáveis de ambiente.
+Esta skill fornece diretrizes sobre **heroku-deploy**.
 
-Para acessar o guia de referência completo, leia [deploy.md](file:///c:/workspace/workspace_bravo-instalacoes/bravoback/.agents/skills/heroku-deploy/references/deploy.md).
+Por favor, leia a documentação completa no arquivo de referência:
+[deploy.md](file:///c:/workspace/adegaspinguinsV2/adegapinguinsback/.agents/skills/heroku-deploy/references/deploy.md)

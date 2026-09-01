@@ -2,9 +2,8 @@
 name: backend-routers
 description: Standard routing configuration, middleware integration, and Express Router setups.
 ---
-# Backend Routers
 
-This skill covers the standard patterns for Express routing, applying tenant resolvers, auth middlewares, and versioning routing tables.
+Esta skill fornece diretrizes sobre **backend-routers**.
 
-## References
-- [Router Reference Guide](file:///c:/workspace/BravosBravoV2/BravoBravoback/.agents/skills/backend-routers/references/ROUTER.md)
+Por favor, leia a documentação completa no arquivo de referência:
+[ROUTER.md](file:///c:/workspace/adegaspinguinsV2/adegapinguinsback/.agents/skills/backend-routers/references/ROUTER.md)

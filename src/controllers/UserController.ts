@@ -22,6 +22,18 @@ export class UserController {
         const status = req.body.status;
         const fcm_token = req.body.fcm_token;
         const verification_token = Utils.generateVerificationToken();
+        const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        const privacy_consent = req.body.privacy_consent ? {
+            accepted: !!req.body.privacy_consent.accepted,
+            version: req.body.privacy_consent.version || 'v1.0.2026',
+            accepted_at: new Date(),
+            ip_address: String(clientIp || '')
+        } : {
+            accepted: true,
+            version: 'v1.0.2026',
+            accepted_at: new Date(),
+            ip_address: String(clientIp || '')
+        };
 
         try {
             const hash = await Utils.encryptPassword(password);
@@ -36,7 +48,8 @@ export class UserController {
                 name,
                 type,
                 status,
-                fcm_token: fcm_token || null
+                fcm_token: fcm_token || null,
+                privacy_consent
             };
 
             let user;
@@ -136,6 +149,19 @@ export class UserController {
                 active: true
             }).save();
 
+            const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const privacy_consent = req.body.privacy_consent ? {
+                accepted: !!req.body.privacy_consent.accepted,
+                version: req.body.privacy_consent.version || 'v1.0.2026',
+                accepted_at: new Date(),
+                ip_address: String(clientIp || '')
+            } : {
+                accepted: true,
+                version: 'v1.0.2026',
+                accepted_at: new Date(),
+                ip_address: String(clientIp || '')
+            };
+
             // Create User (Owner)
             const userData = {
                 email,
@@ -146,7 +172,8 @@ export class UserController {
                 name: owner_name,
                 type: 'company_owner',
                 status: 'active',
-                company_id: company._id
+                company_id: company._id,
+                privacy_consent
             };
 
             const user = await new User(userData).save();
@@ -1102,9 +1129,15 @@ export class UserController {
 
     static async listStaff(req: Request, res: Response, next: NextFunction) {
         try {
-            const staffList = await User.find({
-                type: { $in: ['super_admin', 'admin', 'company_owner', 'collaborator'] }
-            })
+            const { type } = req.query;
+            const filter: any = {};
+            if (type && typeof type === 'string') {
+                filter.type = type;
+            } else {
+                filter.type = { $in: ['super_admin', 'admin', 'company_owner', 'collaborator', 'user'] };
+            }
+
+            const staffList = await User.find(filter)
                 .populate('company_id', 'name')
                 .select('-password -verification_token')
                 .sort({ createdAt: -1 });

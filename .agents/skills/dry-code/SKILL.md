@@ -3,9 +3,7 @@ name: dry-code
 description: Identificação de Duplicação de Código (Princípio DRY) e refatoração por extração para utils/helpers
 ---
 
-# Skill: Identificação de Duplicação de Código (Princípio DRY)
+Esta skill fornece diretrizes sobre **dry-code**.
 
-Esta skill define as diretrizes para buscar, alertar e propor refatorações que evitem a repetição de código no ecossistema Bravo Instalações.
-
-A documentação detalhada e o guia de referência desta skill estão disponíveis em:
-* [Guia de Referência DRY](file:///c:/workspace/BravosBravoV2/BravoBravoback/.agents/skills/dry-code/references/dry-code-guide.md)
+Por favor, leia a documentação completa no arquivo de referência:
+[dry-code-guide.md](file:///c:/workspace/adegaspinguinsV2/adegapinguinsback/.agents/skills/dry-code/references/dry-code-guide.md)
