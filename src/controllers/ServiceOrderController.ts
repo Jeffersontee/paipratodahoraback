@@ -21,10 +21,9 @@ export class ServiceOrderController {
                 filter.collaborator_id = req.query.collaborator_id;
             }
             const authUser = (req as any).user;
-            if (req.query.user_id) {
-                filter.user_id = req.query.user_id;
-            } else if (authUser && authUser.type === 'user') {
-                filter.user_id = authUser._id;
+            const targetUserId = req.query.user_id || (authUser && authUser.type === 'user' ? authUser._id : null);
+            if (targetUserId) {
+                filter.user_id = targetUserId;
             }
 
             if (req.query.start_date || req.query.end_date) {

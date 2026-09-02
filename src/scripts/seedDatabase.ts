@@ -157,7 +157,15 @@ async function seedDatabase() {
         company_id: null,
         status: 'active'
     });
-    console.log('✅ Colaboradores criados.');
+
+    const customerUser = await User.create({
+        name: 'Jefferson Customer',
+        email: 'user@user.com',
+        password: hashedPassword,
+        type: 'user',
+        status: 'active'
+    });
+    console.log('✅ Colaboradores e Cliente (user@user.com) criados.');
 
     // 5. UNIDADES / FILIAIS (UNITS COM DADOS DE CONTATO E CNPJ)
     const VilaRe = await Unit.create({
@@ -561,6 +569,38 @@ async function seedDatabase() {
             address_override: 'Estrada de Itapecerica, 500 - Vila Andrade',
             notes: 'Ralo entupido.',
             timeline: [{ status: 'AGENDADO', timestamp: d12 }]
+        },
+
+        // CUSTOMER USER ORDERS (user@user.com)
+        {
+            company_id: zeDelivery._id,
+            unit_id: VilaRe._id,
+            service_id: servicesZD[0]._id,
+            collaborator_id: carlosTecnicoZD._id,
+            user_id: customerUser._id,
+            requested_by: 'Jefferson Customer (user@user.com)',
+            scheduled_date: d7,
+            current_status: 'AGENDADO',
+            client_price: 150,
+            notes: 'Troca de disjuntor principal da loja.',
+            timeline: [
+                { status: 'SOLICITADO', timestamp: d6, notes: 'Chamado aberto pelo cliente.' },
+                { status: 'AGENDADO', timestamp: d7, notes: 'Técnico Carlos designado.' }
+            ]
+        },
+        {
+            company_id: zeDelivery._id,
+            unit_id: itaquera._id,
+            service_id: servicesZD[1]._id,
+            user_id: customerUser._id,
+            requested_by: 'Jefferson Customer (user@user.com)',
+            scheduled_date: d10,
+            current_status: 'SOLICITADO',
+            client_price: 120,
+            notes: 'Manutenção de portão basculante.',
+            timeline: [
+                { status: 'SOLICITADO', timestamp: d10, notes: 'Aguardando confirmação de agenda.' }
+            ]
         }
     ]);
 
