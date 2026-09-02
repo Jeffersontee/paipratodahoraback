@@ -7,6 +7,11 @@ import Subscription from '../models/subscription.model';
 export class DashboardController {
     static async getStats(req: Request, res: Response, next: NextFunction) {
         try {
+            const companyId = req.query.company_id ? String(req.query.company_id) : undefined;
+            const companyFilter = companyId ? { _id: companyId } : {};
+            const orderFilter = companyId ? { company_id: companyId } : {};
+            const userFilter = companyId ? { company_id: companyId } : {};
+
             // --- KPIs ---
             const [
                 totalCompanies,
@@ -17,15 +22,16 @@ export class DashboardController {
                 pendingOrders,
                 canceledOrders
             ] = await Promise.all([
-                Company.countDocuments(),
-                Company.countDocuments({ active: true }),
-                User.countDocuments(),
-                ServiceOrder.countDocuments(),
-                ServiceOrder.countDocuments({ current_status: 'CONCLUIDO' }),
+                Company.countDocuments(companyFilter),
+                Company.countDocuments({ ...companyFilter, active: true }),
+                User.countDocuments(userFilter),
+                ServiceOrder.countDocuments(orderFilter),
+                ServiceOrder.countDocuments({ ...orderFilter, current_status: 'CONCLUIDO' }),
                 ServiceOrder.countDocuments({
+                    ...orderFilter,
                     current_status: { $in: ['AGENDADO', 'EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO'] }
                 }),
-                ServiceOrder.countDocuments({ current_status: 'CANCELADO' })
+                ServiceOrder.countDocuments({ ...orderFilter, current_status: 'CANCELADO' })
             ]);
 
             // --- Chart: Ordens por mês (últimos 6 meses) ---
@@ -34,8 +40,11 @@ export class DashboardController {
             sixMonthsAgo.setDate(1);
             sixMonthsAgo.setHours(0, 0, 0, 0);
 
+            const matchMonth: any = { createdAt: { $gte: sixMonthsAgo } };
+            if (companyId) matchMonth.company_id = companyId;
+
             const ordersByMonth = await ServiceOrder.aggregate([
-                { $match: { createdAt: { $gte: sixMonthsAgo } } },
+                { $match: matchMonth },
                 {
                     $group: {
                         _id: {
@@ -52,7 +61,11 @@ export class DashboardController {
             ]);
 
             // --- Chart: Empresas por status de assinatura ---
+            const matchSub: any = {};
+            if (companyId) matchSub.company_id = companyId;
+
             const companiesBySubscription = await Subscription.aggregate([
+                ...(companyId ? [{ $match: matchSub }] : []),
                 {
                     $group: {
                         _id: '$status',
@@ -62,7 +75,11 @@ export class DashboardController {
             ]);
 
             // --- Chart: Ordens por status ---
+            const matchStatus: any = {};
+            if (companyId) matchStatus.company_id = companyId;
+
             const ordersByStatus = await ServiceOrder.aggregate([
+                ...(companyId ? [{ $match: matchStatus }] : []),
                 {
                     $group: {
                         _id: '$current_status',

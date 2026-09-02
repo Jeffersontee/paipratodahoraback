@@ -12,6 +12,7 @@ export interface IServiceOrder {
     unit_id: Types.ObjectId;
     service_id: Types.ObjectId;
     collaborator_id?: Types.ObjectId;
+    user_id?: Types.ObjectId;
     scheduled_date?: Date;
     
     current_status: 'SOLICITADO' | 'DATA_SUGERIDA' | 'PROPOSTO' | 'APROVADO' | 'AGENDADO' | 'EM_DESLOCAMENTO' | 'CHECK_IN' | 'EM_EXECUCAO' | 'RELATORIO_CHECKOUT' | 'AVALIACAO' | 'CONCLUIDO' | 'CANCELADO' | 'RECUSADO';
@@ -91,6 +92,7 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
         unit_id: { type: Schema.Types.ObjectId, ref: 'Unit', required: true },
         service_id: { type: Schema.Types.ObjectId, ref: 'Service', required: true },
         collaborator_id: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+        user_id: { type: Schema.Types.ObjectId, ref: 'User', required: false },
         scheduled_date: { type: Date },
         
         current_status: { 

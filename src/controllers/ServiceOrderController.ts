@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose, { Types } from 'mongoose';
 import ServiceOrder from '../models/serviceorder.model';
+import Company from '../models/company.model';
+import Unit from '../models/unit.model';
 import Rating from '../models/rating.model';
 import { AuditService } from '../services/AuditService';
 import { NotificationService } from '../services/NotificationService';
@@ -18,6 +20,12 @@ export class ServiceOrderController {
             if (req.query.collaborator_id) {
                 filter.collaborator_id = req.query.collaborator_id;
             }
+            const authUser = (req as any).user;
+            if (req.query.user_id) {
+                filter.user_id = req.query.user_id;
+            } else if (authUser && authUser.type === 'user') {
+                filter.user_id = authUser._id;
+            }
 
             if (req.query.start_date || req.query.end_date) {
                 filter.scheduled_date = {};
@@ -32,8 +40,9 @@ export class ServiceOrderController {
             const orders = await ServiceOrder.find(filter)
                 .populate('company_id', 'name short_name')
                 .populate('unit_id', 'name address')
-                .populate('service_id', 'name category icon')
+                .populate('service_id', 'name category icon price description')
                 .populate('collaborator_id', 'name phone')
+                .populate('user_id', 'name email phone')
                 .sort({ createdAt: -1 });
 
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(orders, (req as any).user?.type);
@@ -54,6 +63,22 @@ export class ServiceOrderController {
                 gut_gravity, gut_urgency, gut_trend 
             } = req.body;
             
+            let finalCompanyId = company_id;
+            let finalUnitId = unit_id;
+
+            if (!finalCompanyId) {
+                const firstCompany = await Company.findOne({ active: true });
+                if (firstCompany) finalCompanyId = firstCompany._id;
+            }
+
+            if (!finalUnitId && finalCompanyId) {
+                const firstUnit = await Unit.findOne({ company_id: finalCompanyId });
+                if (firstUnit) finalUnitId = firstUnit._id;
+            }
+
+            const authUser = (req as any).user;
+            const userId = req.body.user_id || authUser?._id;
+
             const cleanCollaboratorId =
                 collaborator_id === '' || collaborator_id === 'null' || collaborator_id === null
                     ? null
@@ -68,10 +93,11 @@ export class ServiceOrderController {
             const score = gravity * urgency * trend;
 
             const order = new ServiceOrder({
-                company_id,
-                unit_id,
+                company_id: finalCompanyId,
+                unit_id: finalUnitId,
                 service_id,
                 collaborator_id: cleanCollaboratorId,
+                user_id: userId,
                 scheduled_date,
                 current_status: initialStatus,
                 timeline: [
