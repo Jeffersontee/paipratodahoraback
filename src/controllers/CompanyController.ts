@@ -21,17 +21,43 @@ export class CompanyController {
 
     static async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const body: ICompanyCreateInput = req.body;
+            const body: ICompanyCreateInput & { password?: string; phone?: string } = req.body;
             const existingCompany = await Company.findOne({ cnpj: body.cnpj });
             if (existingCompany) {
-                return res.status(422).json({ success: false, message: 'A company with this CNPJ already exists' });
+                return res.status(422).json({ success: false, message: 'Já existe uma empresa cadastrada com este CNPJ.' });
             }
 
             const company = new Company(body);
             await company.save();
 
-            // Cria a assinatura em status trialing (trial)
-            const trialDays = 14; // ou pegar das configs globais
+            // Cria automaticamente a conta do responsável (company_owner) se o e-mail e a senha forem fornecidos
+            if (body.email && body.password) {
+                const userEmail = body.email.toLowerCase().trim();
+                let existingUser = await User.findOne({ email: userEmail });
+                if (existingUser) {
+                    existingUser.company_id = company._id as any;
+                    existingUser.type = 'company_owner';
+                    await existingUser.save();
+                } else {
+                    const hash = await Utils.encryptPassword(body.password);
+                    const verification_token = Utils.generateVerificationToken();
+                    const newUser = new User({
+                        name: body.owner_name || body.name,
+                        email: userEmail,
+                        phone: body.phone || '',
+                        type: 'company_owner',
+                        password: hash,
+                        company_id: company._id,
+                        status: 'active',
+                        verification_token,
+                        verification_token_time: Date.now() + new Utils().MAX_TOKEN_TIME
+                    });
+                    await newUser.save();
+                }
+            }
+
+            // Cria a assinatura em status trialing (trial) por padrão
+            const trialDays = 14;
             const endDate = new Date();
             endDate.setDate(endDate.getDate() + trialDays);
 
@@ -43,7 +69,7 @@ export class CompanyController {
             });
             await subscription.save();
 
-            // Atualiza o next_payment_date da empresa
+            // Atualiza o status e vinculo na empresa
             company.next_payment_date = endDate;
             company.subscription_status = 'trial';
             company.subscription_id = subscription._id;
@@ -62,7 +88,7 @@ export class CompanyController {
         try {
             const company = await Company.findById(req.params.id);
             if (!company) {
-                return res.status(404).json({ success: false, message: 'Company not found' });
+                return res.status(404).json({ success: false, message: 'Empresa não encontrada.' });
             }
             return res.status(200).json({
                 success: true,
@@ -83,7 +109,7 @@ export class CompanyController {
             );
 
             if (!company) {
-                return res.status(404).json({ success: false, message: 'Company not found' });
+                return res.status(404).json({ success: false, message: 'Empresa não encontrada.' });
             }
 
             return res.status(200).json({
@@ -105,7 +131,7 @@ export class CompanyController {
             );
 
             if (!company) {
-                return res.status(404).json({ success: false, message: 'Company not found' });
+                return res.status(404).json({ success: false, message: 'Empresa não encontrada.' });
             }
 
             return res.status(200).json({
@@ -121,7 +147,7 @@ export class CompanyController {
         try {
             const company = await Company.findByIdAndDelete(req.params.id);
             if (!company) {
-                return res.status(404).json({ success: false, message: 'Company not found' });
+                return res.status(404).json({ success: false, message: 'Empresa não encontrada.' });
             }
             return res.status(200).json({
                 success: true,
@@ -154,15 +180,13 @@ export class CompanyController {
             const { email, name, phone, type, password } = req.body;
             const companyId = req.params.id;
 
-            let user = await User.findOne({ email });
+            let user = await User.findOne({ email: email.toLowerCase().trim() });
 
             if (user) {
-                // Se já existe, apenas vincula
                 user.company_id = companyId as any;
-                user.type = type || user.type; // Atualiza o tipo (ex: de user para company_owner)
+                user.type = type || user.type;
                 await user.save();
             } else {
-                // Cria novo
                 if (!password) {
                     return res
                         .status(422)
@@ -173,7 +197,7 @@ export class CompanyController {
 
                 user = new User({
                     name,
-                    email,
+                    email: email.toLowerCase().trim(),
                     phone,
                     type: type || 'admin',
                     password: hash,
