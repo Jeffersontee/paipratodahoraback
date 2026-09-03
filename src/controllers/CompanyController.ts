@@ -90,9 +90,20 @@ export class CompanyController {
             if (!company) {
                 return res.status(404).json({ success: false, message: 'Empresa não encontrada.' });
             }
+
+            const companyObj: any = company.toObject();
+            if (!companyObj.owner_name || !companyObj.email || !companyObj.phone) {
+                const owner = await User.findOne({ company_id: company._id, type: 'company_owner' });
+                if (owner) {
+                    if (!companyObj.owner_name) companyObj.owner_name = owner.name;
+                    if (!companyObj.email) companyObj.email = owner.email;
+                    if (!companyObj.phone) companyObj.phone = owner.phone;
+                }
+            }
+
             return res.status(200).json({
                 success: true,
-                data: company
+                data: companyObj
             });
         } catch (e: any) {
             next(e);
