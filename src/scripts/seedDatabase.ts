@@ -706,6 +706,37 @@ async function seedDatabase() {
             ]
           }
         ]
+      },
+      {
+        id: 'agenda-service-orders',
+        title: 'Agenda 365 e Status de OS',
+        icon: 'calendar-number-outline',
+        order: 3,
+        topics: [
+          {
+            id: 'agenda-visual-flow',
+            title: 'Navegação e Visualizações da Agenda 365',
+            content: [
+              'A Agenda 365 oferece controle operacional consolidado em tempo real das Ordens de Serviço (OS).',
+              'Visualização Mensal: Exibe a lista de chamados de cada dia com horário de início e status codificado em cores.',
+              'Visualização Semanal / Diária: Permite acompanhar a grade horária detalhada de cada serviço com técnico e unidade alocados.',
+              'Acesso Direto à OS: Ao clicar em qualquer evento do calendário, você é redirecionado instantaneamente para a tela de detalhes e ações da OS.'
+            ]
+          },
+          {
+            id: 'agenda-status-colors',
+            title: 'Guia de Cores e Status das Ordens de Serviço',
+            content: [
+              '🔵 Agendado (Azul): A Ordem de Serviço foi confirmada e agendada para a data e horário estipulados.',
+              '🟣 Técnico a Caminho (Roxo / Ciano): O técnico iniciou o deslocamento até a unidade de atendimento.',
+              '🟡 Técnico no Local / Em Execução (Amarelo / Âmbar): Check-in presencial realizado e serviço em execução.',
+              '🔵 Aguardando Assinatura (Azul Claro): Manutenção concluída, aguardando assinatura do responsável na unidade.',
+              '🟢 Concluído (Verde): Ordem de serviço finalizada e assinada com sucesso.',
+              '🔴 Cancelado / Recusado (Vermelho): Atendimento cancelado ou impedido por restrições técnicas.',
+              'Lembretes Automáticos: O sistema emite notificações preventivas (Push e E-mail) com registro em trilha de auditoria prévia da execução.'
+            ]
+          }
+        ]
       }
     ];
 

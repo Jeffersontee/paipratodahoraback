@@ -450,4 +450,141 @@ export class NotificationService {
             console.error('⚠️ [NotificationService]: Erro ao enviar push de alerta crítico para Super Admins:', error);
         }
     }
+
+    /**
+     * Envia push e e-mail de lembrete preventivo para os envolvidos na OS próxima da data de execução
+     */
+    static async sendServiceOrderReminder(orderId: string) {
+        try {
+            const order = await ServiceOrder.findById(orderId)
+                .populate('company_id')
+                .populate('unit_id')
+                .populate('service_id')
+                .populate('collaborator_id')
+                .lean() as any;
+
+            if (!order || !order.scheduled_date) return;
+
+            const serviceName = order.service_id?.name || 'Serviço de Manutenção';
+            const unitName = order.unit_id?.name || 'Unidade';
+            const companyName = order.company_id?.name || 'Estabelecimento';
+            const techName = order.collaborator_id?.name || 'Técnico Designado';
+            
+            const scheduledDate = new Date(order.scheduled_date);
+            const dateStr = scheduledDate.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+            const timeStr = scheduledDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+            const scheduledFormatted = `${dateStr} às ${timeStr}`;
+
+            const pushTitle = '📅 Lembrete de Visita Técnica';
+            const pushBody = `A OS de ${serviceName} na unidade ${unitName} está agendada para ${scheduledFormatted}.`;
+
+            const targets: { email: string; token?: string; role: string; name?: string }[] = [];
+
+            // 1. Lojistas (Donos do Estabelecimento)
+            const companyOwners = await User.find({ company_id: order.company_id?._id, type: 'company_owner' }).lean();
+            companyOwners.forEach((owner: any) => {
+                targets.push({ email: owner.email, token: owner.fcm_token, role: 'Lojista', name: owner.name });
+            });
+
+            // 2. Técnico designado
+            if (order.collaborator_id) {
+                targets.push({
+                    email: order.collaborator_id.email,
+                    token: order.collaborator_id.fcm_token,
+                    role: 'Técnico',
+                    name: order.collaborator_id.name
+                });
+            }
+
+            const notifiedEmails: string[] = [];
+
+            // Envio de Push FCM
+            for (const target of targets) {
+                if (target.token) {
+                    try {
+                        const message: Message = {
+                            notification: { title: pushTitle, body: pushBody },
+                            data: {
+                                type: 'SERVICE_ORDER_REMINDER',
+                                order_id: String(order._id),
+                                scheduled_date: String(order.scheduled_date)
+                            },
+                            token: String(target.token)
+                        };
+                        await getMessaging().send(message);
+                        console.log(`✅ [NotificationService]: Push de lembrete enviado para ${target.email} (${target.role})`);
+                    } catch (pushErr: any) {
+                        console.error(`⚠️ [NotificationService]: Falha ao enviar push para ${target.email}:`, pushErr.message);
+                    }
+                }
+            }
+
+            // Envio de E-mail
+            for (const target of targets) {
+                if (target.email) {
+                    try {
+                        const emailHtml = `
+                            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff;">
+                                <div style="background: #0f172a; padding: 24px; text-align: center; color: #ffffff;">
+                                    <h2 style="margin: 0; font-size: 20px; font-weight: 700;">📅 Lembrete de Ordem de Serviço</h2>
+                                    <p style="margin: 4px 0 0; font-size: 14px; opacity: 0.8;">Bravo Instalações & Manutenções</p>
+                                </div>
+                                <div style="padding: 24px;">
+                                    <p>Olá, <strong>${target.name || target.role}</strong>!</p>
+                                    <p>Este é um lembrete automático de que você possui uma Ordem de Serviço agendada para execução em breve:</p>
+                                    
+                                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                                        <p style="margin: 4px 0;"><strong>🛠️ Serviço:</strong> ${serviceName}</p>
+                                        <p style="margin: 4px 0;"><strong>🏢 Estabelecimento:</strong> ${companyName}</p>
+                                        <p style="margin: 4px 0;"><strong>📍 Unidade:</strong> ${unitName}</p>
+                                        <p style="margin: 4px 0;"><strong>👨‍🔧 Técnico:</strong> ${techName}</p>
+                                        <p style="margin: 4px 0;"><strong>⏰ Data e Horário:</strong> <span style="color: #2563eb; font-weight: 700;">${scheduledFormatted}</span></p>
+                                    </div>
+
+                                    <p style="font-size: 13px; color: #64748b;">
+                                        Caso necessite remarcar ou reportar qualquer impedimento prévio, acesse seu painel na plataforma.
+                                    </p>
+                                </div>
+                                <div style="background: #f1f5f9; padding: 12px 24px; text-align: center; font-size: 12px; color: #64748b;">
+                                    Mensagem enviada automaticamente pelo ecossistema Bravo.
+                                </div>
+                            </div>
+                        `;
+
+                        await NodeMailer.sendMail({
+                            to: [target.email],
+                            subject: `[LEMBRETE] OS Agendada: ${serviceName} - ${scheduledFormatted}`,
+                            html: emailHtml
+                        });
+                        notifiedEmails.push(target.email);
+                        console.log(`✅ [NotificationService]: E-mail de lembrete enviado para ${target.email}`);
+                    } catch (mailErr: any) {
+                        console.error(`⚠️ [NotificationService]: Falha ao enviar e-mail para ${target.email}:`, mailErr.message);
+                    }
+                }
+            }
+
+            // Marca na OS que o lembrete foi enviado (idempotência)
+            await ServiceOrder.findByIdAndUpdate(orderId, { reminder_sent_at: new Date() });
+
+            // Registro obrigatório no AuditService
+            await AuditService.log(null, {
+                action: 'OS_REMINDER_SENT',
+                module: 'SERVICE_ORDER',
+                severity: 'info',
+                company_id: order.company_id?._id ? String(order.company_id._id) : undefined,
+                details: {
+                    order_id: String(order._id),
+                    service_name: serviceName,
+                    scheduled_date: order.scheduled_date,
+                    scheduled_formatted: scheduledFormatted,
+                    notified_emails: notifiedEmails,
+                    total_targets: targets.length
+                }
+            });
+
+        } catch (error) {
+            console.error('⚠️ [NotificationService]: Erro ao processar envio de lembretes da OS:', error);
+        }
+    }
 }

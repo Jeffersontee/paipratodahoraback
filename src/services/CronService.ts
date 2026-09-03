@@ -1,12 +1,35 @@
-﻿import cron from 'node-cron';
+import cron from 'node-cron';
 import Banner from '../models/banner.model';
 import Company from '../models/company.model';
+import ServiceOrder from '../models/serviceorder.model';
 import { NotificationService } from './NotificationService';
 import { PaymentOnboardingController } from '../controllers/PaymentOnboardingController';
 import { InvoiceController } from '../controllers/InvoiceController';
 
 export class CronService {
     static start() {
+        // Lembrete de Ordens de Serviço Agendadas (Roda diariamente às 08:00)
+        cron.schedule('0 8 * * *', async () => {
+            console.log('⏰ [CRON]: Verificando Ordens de Serviço agendadas para envio de lembrete...');
+            try {
+                const now = new Date();
+                const next24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+                const upcomingOrders = await ServiceOrder.find({
+                    current_status: 'AGENDADO',
+                    scheduled_date: { $gte: now, $lte: next24h },
+                    reminder_sent_at: { $exists: false }
+                });
+
+                console.log(`📡 [CRON]: Encontradas ${upcomingOrders.length} Ordens de Serviço para envio de lembrete.`);
+
+                for (const order of upcomingOrders) {
+                    await NotificationService.sendServiceOrderReminder(order._id.toString());
+                }
+            } catch (error) {
+                console.error('❌ [CRON ERROR]: Falha na rotina de lembretes de OS:', error);
+            }
+        });
         // Agenda para rodar todos os dias às 09:00 da manhã
         cron.schedule('0 9 * * *', async () => {
             console.log('⏰ [CRON]: Verificando expiração de banners...');

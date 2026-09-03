@@ -66,6 +66,9 @@ export interface IServiceOrder {
         service_id?: Types.ObjectId;
     }[];
     
+    // Controle de Notificações de Agendamento
+    reminder_sent_at?: Date;
+
     createdAt: Date;
     updatedAt: Date;
 }
@@ -151,7 +154,10 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
         aditives: [{
             description: { type: String, required: true },
             service_id: { type: Schema.Types.ObjectId, ref: 'Service', required: false }
-        }]
+        }],
+
+        // Lembrete Prévio de Execução
+        reminder_sent_at: { type: Date }
     },
     {
         timestamps: true
