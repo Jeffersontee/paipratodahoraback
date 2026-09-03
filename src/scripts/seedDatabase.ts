@@ -5,6 +5,7 @@ import { Company } from '../models/company.model';
 import { Unit } from '../models/unit.model';
 import { Service } from '../models/service.model';
 import { ServiceOrder } from '../models/serviceorder.model';
+import HelpCategory from '../models/HelpCategory';
 import bcrypt from 'bcrypt';
 
 dotenv.config();
@@ -18,6 +19,7 @@ async function clearDatabase() {
     await Unit.deleteMany({});
     await Service.deleteMany({});
     await ServiceOrder.deleteMany({});
+    await HelpCategory.deleteMany({});
     console.log('✅ Coleções limpas.');
 }
 
@@ -605,6 +607,112 @@ async function seedDatabase() {
     ]);
 
     console.log('✅ Solicitações de serviço (Visitas) criadas com dados ricos para gráficos.');
+
+    // 7. CENTRAL DE AJUDA (HELP TOPICS SEEDER EXPORTÁVEL)
+    console.log('📚 Semeando Tópicos da Central de Ajuda...');
+    const helpSeedData = [
+      {
+        id: 'collaborators',
+        title: 'Colaboradores e Técnicos',
+        icon: 'people-outline',
+        order: 1,
+        topics: [
+          {
+            id: 'collaborator-main-info',
+            title: 'Dados Principais do Colaborador',
+            content: [
+              'O formulário de cadastro do colaborador solicita os dados essenciais de identificação do profissional de campo.',
+              'Nome Completo: Nome oficial do colaborador utilizado na emissão de Ordens de Serviço (OS) e relatórios técnicos.',
+              'E-mail: Endereço de e-mail exclusivo utilizado pelo colaborador para autenticação e login no aplicativo.',
+              'Telefone: Número de contato telefônico/WhatsApp para notificação automática sobre agendamentos e chamados.',
+              'Senha: Credencial de segurança inicial com no mínimo 6 caracteres.'
+            ]
+          },
+          {
+            id: 'collaborator-permissions',
+            title: 'Permissões e Cargos do Colaborador',
+            content: [
+              'Define o nível de autorização operacional e o escopo de atendimento do profissional.',
+              'Nível de Acesso / Cargo: Define a função (Técnico executa OS, Supervisor coordena equipes, Administrativo atua no suporte).',
+              'Empresa / Vínculo: Associa o colaborador a uma empresa parceira específica ou o mantém no Atendimento Geral (Global).',
+              'Especialidades: Seleção das áreas técnicas em que o profissional possui certificação (Elétrica, Hidráulica/Civil, Serralheria).',
+              'Colaborador Ativo: Permite bloquear ou liberar instantaneamente o acesso do colaborador ao aplicativo.'
+            ]
+          },
+          {
+            id: 'collaborator-teams',
+            title: 'Visão Geral de Equipes e Cargos',
+            content: [
+              'A tela de Equipes e Cargos agrega em tempo real a divisão da força de trabalho da empresa.',
+              'Equipe Técnica: Profissionais alocados como Técnicos de Campo.',
+              'Supervisores: Líderes operacionais com capacidade de vistoria e gestão.',
+              'Administrativo: Equipe interna de suporte, recepção e agendamento de chamados.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'services',
+        title: 'Catálogo de Serviços',
+        icon: 'construct-outline',
+        order: 5,
+        topics: [
+          {
+            id: 'service-data',
+            title: 'Dados e Precificação do Serviço',
+            content: [
+              'Informações essenciais de identificação e valor comercial do serviço prestado.',
+              'Nome do Serviço: Título exibido no aplicativo do cliente e nas Ordens de Serviço.',
+              'Descrição: Detalhes do escopo e atividades incluídas no atendimento.',
+              'Preço Base (R$): Valor inicial/padrão cobrado pela execução.',
+              'Categoria / Especialidade: Área técnica (Elétrica, Hidráulica/Civil, Serralheria, Geral), utilizada no filtro de alocação de técnicos.'
+            ]
+          },
+          {
+            id: 'service-appearance',
+            title: 'Aparência Visual e Disponibilidade',
+            content: [
+              'Configurações visuais e de agendamento do serviço.',
+              'Ícone no App: Representação gráfica do serviço nos cards do aplicativo e catálogo.',
+              'Serviço Ativo: Alterna a disponibilidade para novos agendamentos no sistema.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'staff',
+        title: 'Usuários Globais e Permissões',
+        icon: 'person-add-outline',
+        order: 2,
+        topics: [
+          {
+            id: 'staff-main-info',
+            title: 'Dados de Identidade do Usuário',
+            content: [
+              'Cadastro das informações primárias de qualquer perfil de acesso ao ecossistema Bravo.',
+              'Nome Completo: Nome do usuário responsável pela conta.',
+              'E-mail: E-mail de credencial para realizar login nos painéis administrativos ou cliente.',
+              'Telefone: Número de contato direto do usuário.'
+            ]
+          },
+          {
+            id: 'staff-permissions',
+            title: 'Credenciais, Níveis de Acesso e Módulos',
+            content: [
+              'Definição das chaves de segurança e escopo de navegação no painel.',
+              'Nível de Acesso: Define o papel do usuário no sistema (Super Admin, Dono de Empresa, Operador, Técnico de Campo, Cliente B2C).',
+              'Empresa Associada: Associa a conta ao tenant da empresa correspondente.',
+              'Módulos Liberados: Permissões granuladas de acesso aos menus (Empresas, Catálogo, Usuários, etc.).'
+            ]
+          }
+        ]
+      }
+    ];
+
+    for (const catData of helpSeedData) {
+      await HelpCategory.create(catData);
+    }
+    console.log('✅ Central de Ajuda semeada com sucesso!');
 }
 
 async function run() {
