@@ -10,9 +10,26 @@ export class CompanyController {
     static async list(req: Request, res: Response, next: NextFunction) {
         try {
             const companies = await Company.find().sort({ createdAt: -1 });
+
+            // Enriquecer cada empresa com os dados do responsável/dono caso estejam em branco
+            const enrichedCompanies = await Promise.all(
+                companies.map(async (company) => {
+                    const compObj: any = company.toObject();
+                    if (!compObj.owner_name || !compObj.email || !compObj.phone) {
+                        const owner = await User.findOne({ company_id: company._id, type: 'company_owner' });
+                        if (owner) {
+                            if (!compObj.owner_name) compObj.owner_name = owner.name;
+                            if (!compObj.email) compObj.email = owner.email;
+                            if (!compObj.phone) compObj.phone = owner.phone;
+                        }
+                    }
+                    return compObj;
+                })
+            );
+
             return res.status(200).json({
                 success: true,
-                data: companies
+                data: enrichedCompanies
             });
         } catch (e: any) {
             next(e);
@@ -37,6 +54,7 @@ export class CompanyController {
                 if (existingUser) {
                     existingUser.company_id = company._id as any;
                     existingUser.type = 'company_owner';
+                    if (body.phone) existingUser.phone = body.phone;
                     await existingUser.save();
                 } else {
                     const hash = await Utils.encryptPassword(body.password);
@@ -112,15 +130,26 @@ export class CompanyController {
 
     static async update(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, owner_name, short_name, description, cnpj, email, active, services } = req.body;
+            const { name, owner_name, short_name, description, cnpj, email, phone, active, services } = req.body;
             const company = await Company.findByIdAndUpdate(
                 req.params.id,
-                { name, owner_name, short_name, description, cnpj, email, active, services },
+                { name, owner_name, short_name, description, cnpj, email, phone, active, services },
                 { new: true, runValidators: true }
             );
 
             if (!company) {
                 return res.status(404).json({ success: false, message: 'Empresa não encontrada.' });
+            }
+
+            // Sincroniza os dados do responsável na conta do usuário Dono da Empresa caso exista
+            if (owner_name || email || phone) {
+                const owner = await User.findOne({ company_id: company._id, type: 'company_owner' });
+                if (owner) {
+                    if (owner_name) owner.name = owner_name;
+                    if (email) owner.email = email.toLowerCase().trim();
+                    if (phone) owner.phone = phone;
+                    await owner.save();
+                }
             }
 
             return res.status(200).json({

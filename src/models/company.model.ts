@@ -12,6 +12,7 @@ const CompanySchema = new Schema<ICompanyDocument>(
         description: { type: String, required: false },
         cnpj: { type: String, required: true, unique: true },
         email: { type: String },
+        phone: { type: String },
         active: { type: Boolean, default: true },
         subscription_status: { type: String, default: 'active' },
         next_payment_date: { type: Date, required: false },

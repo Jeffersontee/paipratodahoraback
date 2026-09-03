@@ -6,6 +6,7 @@ export interface ICompany {
     description?: string;
     cnpj: string;
     email?: string;
+    phone?: string;
     active: boolean;
     subscription_status?: 'trial' | 'active' | 'inactive' | 'canceled'; // Tipagem estrita
     next_payment_date?: Date;
