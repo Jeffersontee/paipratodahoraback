@@ -9,8 +9,8 @@ export class UnitController {
                 filter.company_id = req.query.company_id;
             }
             const units = await Unit.find(filter)
-                .populate('manager_id', 'name phone email')
-                .populate('follower_ids', 'name phone email')
+                .populate('manager_id', 'name phone email role type')
+                .populate('follower_ids', 'name phone email role type')
                 .sort({ createdAt: -1 });
             return res.status(200).json({
                 success: true,
@@ -26,12 +26,15 @@ export class UnitController {
             const { name, company_id, address, manager_id, follower_ids, status, cnpj, phone, email, short_name } =
                 req.body;
 
+            const cleanManagerId = manager_id && String(manager_id).trim() !== '' ? manager_id : null;
+            const cleanFollowerIds = Array.isArray(follower_ids) ? follower_ids.filter((id: any) => id && String(id).trim() !== '') : [];
+
             const unit = new Unit({
                 name,
                 company_id,
                 address,
-                manager_id,
-                follower_ids,
+                manager_id: cleanManagerId,
+                follower_ids: cleanFollowerIds,
                 status,
                 cnpj,
                 phone,
@@ -52,8 +55,8 @@ export class UnitController {
     static async get(req: Request, res: Response, next: NextFunction) {
         try {
             const unit = await Unit.findById(req.params.id)
-                .populate('manager_id', 'name phone email')
-                .populate('follower_ids', 'name phone email');
+                .populate('manager_id', 'name phone email role type')
+                .populate('follower_ids', 'name phone email role type');
             if (!unit) {
                 return res.status(404).json({ success: false, message: 'Unit not found' });
             }
@@ -70,9 +73,13 @@ export class UnitController {
         try {
             const { name, company_id, address, manager_id, follower_ids, status, cnpj, phone, email, short_name } =
                 req.body;
+
+            const cleanManagerId = manager_id && String(manager_id).trim() !== '' ? manager_id : null;
+            const cleanFollowerIds = Array.isArray(follower_ids) ? follower_ids.filter((id: any) => id && String(id).trim() !== '') : [];
+
             const unit = await Unit.findByIdAndUpdate(
                 req.params.id,
-                { name, company_id, address, manager_id, follower_ids, status, cnpj, phone, email, short_name },
+                { name, company_id, address, manager_id: cleanManagerId, follower_ids: cleanFollowerIds, status, cnpj, phone, email, short_name },
                 { new: true, runValidators: true }
             );
 

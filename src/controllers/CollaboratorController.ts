@@ -74,26 +74,27 @@ export class CollaboratorController {
             const userCompanyId = adminUser?.company_id || null;
 
             const filter: any = {};
-            const targetCompanyId = (adminUser?.type === 'super_admin' ? req.query.company_id : userCompanyId) as string | undefined;
+            const queryCompanyId = req.query.company_id as string | undefined;
+            const targetCompanyId = adminUser?.type === 'super_admin' ? (queryCompanyId || userCompanyId) : (userCompanyId || queryCompanyId);
 
             if (targetCompanyId) {
-                // Traz colaboradores da empresa solicitada + Técnicos Globais (sem vínculo fixo)
+                // Traz todos os membros/usuários vinculados à empresa solicitada + Técnicos Globais (sem vínculo fixo)
                 filter.$or = [
                     { company_id: targetCompanyId },
                     { company_id: null, role: { $in: ['technician', 'técnico', 'collaborator', 'supervisor'] } },
                     { company_id: { $exists: false }, role: { $in: ['technician', 'técnico', 'collaborator', 'supervisor'] } }
                 ];
-                filter.type = { $in: ['collaborator', 'admin', 'company_owner'] };
+                filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff', 'user'] };
             } else {
                 if (adminUser?.type === 'super_admin') {
-                    filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff'] };
+                    filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff', 'user'] };
                 } else {
                     filter.$or = [
                         { company_id: userCompanyId },
                         { company_id: null, role: { $in: ['technician', 'técnico', 'collaborator', 'supervisor'] } },
                         { company_id: { $exists: false }, role: { $in: ['technician', 'técnico', 'collaborator', 'supervisor'] } }
                     ];
-                    filter.type = { $in: ['collaborator', 'admin', 'company_owner'] };
+                    filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff', 'user'] };
                 }
             }
 
