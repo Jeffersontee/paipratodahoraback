@@ -76,10 +76,11 @@ export class CollaboratorController {
             const filter: any = {};
             if (adminUser?.type !== 'super_admin') {
                 filter.company_id = company_id;
-                filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff'] };
+                filter.type = { $in: ['collaborator', 'admin', 'company_owner'] };
             } else {
                 if (req.query.company_id) {
                     filter.company_id = req.query.company_id;
+                    filter.type = { $in: ['collaborator', 'admin', 'company_owner'] };
                 } else {
                     filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff'] };
                 }
