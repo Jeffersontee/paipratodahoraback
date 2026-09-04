@@ -73,9 +73,16 @@ export class CollaboratorController {
             const adminUser = await User.findById(req.user?.aud || req.user?.user_id || req.user?._id);
             const company_id = adminUser?.company_id || null;
 
-            const filter: any = { type: 'collaborator' };
+            const filter: any = {};
             if (adminUser?.type !== 'super_admin') {
                 filter.company_id = company_id;
+                filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff'] };
+            } else {
+                if (req.query.company_id) {
+                    filter.company_id = req.query.company_id;
+                } else {
+                    filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff'] };
+                }
             }
 
             const collaborators = await User.find(filter)
