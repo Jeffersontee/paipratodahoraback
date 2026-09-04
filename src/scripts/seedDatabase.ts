@@ -35,6 +35,7 @@ async function seedDatabase() {
         email: 'admin@bravoinstalacoes.com.br',
         password: hashedPassword,
         type: 'super_admin',
+        role: 'root',
         phone: '11999990000',
         status: 'active'
     });
@@ -44,9 +45,9 @@ async function seedDatabase() {
         email: 'supervisor@bravoinstalacoes.com.br',
         password: hashedPassword,
         type: 'super_staff',
+        role: 'supervisor',
         phone: '11999990001',
-        status: 'active',
-        role: 'Supervisor'
+        status: 'active'
     });
 
     const superOperator = await User.create({
@@ -54,9 +55,9 @@ async function seedDatabase() {
         email: 'operador@bravoinstalacoes.com.br',
         password: hashedPassword,
         type: 'super_staff',
+        role: 'backoffice',
         phone: '11999990002',
-        status: 'active',
-        role: 'Operador'
+        status: 'active'
     });
     console.log('✅ Usuários globais (Staff) criados.');
 
@@ -89,6 +90,7 @@ async function seedDatabase() {
         email: 'joao@zedelivery.com',
         password: hashedPassword,
         type: 'company_owner',
+        role: 'owner',
         company_id: zeDelivery._id,
         phone: '11988880001',
         status: 'active'
@@ -99,6 +101,7 @@ async function seedDatabase() {
         email: 'barry@flash.com',
         password: hashedPassword,
         type: 'company_owner',
+        role: 'owner',
         company_id: flashLtda._id,
         phone: '11988880002',
         status: 'active'
@@ -109,19 +112,24 @@ async function seedDatabase() {
         email: 'diretor@ambev.com',
         password: hashedPassword,
         type: 'company_owner',
+        role: 'owner',
         company_id: ambev._id,
         phone: '11988880003',
         status: 'active'
     });
     console.log('✅ Proprietários de empresas criados.');
 
-    // 4. COLABORADORES (TÉCNICOS E SUPERVISORES ASSOCIADOS)
+    // 4. COLABORADORES E OPERADORES ASSOCIADOS
     const carlosTecnicoZD = await User.create({
         name: 'Carlos Técnico',
         email: 'carlos@zedelivery.com',
         password: hashedPassword,
         type: 'collaborator',
-        role: 'Técnico de Campo',
+        role: 'technician',
+        technician_profile: {
+            specialties: ['Elétrica', 'Climatização'],
+            is_available_now: true
+        },
         company_id: zeDelivery._id,
         phone: '11977770001',
         status: 'active'
@@ -132,7 +140,7 @@ async function seedDatabase() {
         email: 'lucas@zedelivery.com',
         password: hashedPassword,
         type: 'collaborator',
-        role: 'Supervisor',
+        role: 'supervisor',
         company_id: zeDelivery._id,
         phone: '11977770002',
         status: 'active'
@@ -143,7 +151,11 @@ async function seedDatabase() {
         email: 'pedro@flash.com',
         password: hashedPassword,
         type: 'collaborator',
-        role: 'Técnico de Campo',
+        role: 'technician',
+        technician_profile: {
+            specialties: ['Hidráulica', 'CFTV'],
+            is_available_now: true
+        },
         company_id: flashLtda._id,
         phone: '11977770003',
         status: 'active'
@@ -153,8 +165,8 @@ async function seedDatabase() {
         name: 'Ana Operadora Flash',
         email: 'ana@flash.com',
         password: hashedPassword,
-        type: 'collaborator',
-        role: 'Operador',
+        type: 'admin',
+        role: 'backoffice',
         company_id: flashLtda._id,
         phone: '11977770004',
         status: 'active'
@@ -165,7 +177,11 @@ async function seedDatabase() {
         email: 'thiago@bravoinstalacoes.com.br',
         password: hashedPassword,
         type: 'collaborator',
-        role: 'Técnico de Campo',
+        role: 'technician',
+        technician_profile: {
+            specialties: ['Geral', 'Elétrica'],
+            is_available_now: true
+        },
         company_id: null,
         phone: '11977770005',
         status: 'active'
@@ -176,6 +192,7 @@ async function seedDatabase() {
         email: 'user@user.com',
         password: hashedPassword,
         type: 'user',
+        role: 'customer',
         phone: '11988887777',
         status: 'active'
     });

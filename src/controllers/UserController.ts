@@ -1125,16 +1125,35 @@ export class UserController {
         }
     }
 
-    // --- Super Admin Staff (Usuários Globais) ---
+    // --- Super Admin & Company Staff (Usuários Globais e da Empresa) ---
 
     static async listStaff(req: Request, res: Response, next: NextFunction) {
         try {
-            const { type } = req.query;
+            const { type, role, company_id } = req.query;
+            const callerId = req.user?.aud || req.user?.user_id || req.user?._id;
+            const caller = callerId ? await User.findById(callerId) : null;
+
             const filter: any = {};
+
             if (type && typeof type === 'string') {
                 filter.type = type;
             } else {
-                filter.type = { $in: ['super_admin', 'admin', 'company_owner', 'collaborator', 'user'] };
+                filter.type = { $in: ['super_admin', 'super_staff', 'admin', 'company_owner', 'collaborator', 'user'] };
+            }
+
+            if (role && typeof role === 'string') {
+                filter.role = role;
+            }
+
+            // Multi-Tenancy: Se não for Super Admin, isola para a empresa do caller
+            if (caller && caller.type !== 'super_admin') {
+                filter.company_id = caller.company_id || null;
+            } else if (company_id && typeof company_id === 'string') {
+                if (company_id === 'null' || company_id === 'global') {
+                    filter.company_id = null;
+                } else {
+                    filter.company_id = company_id;
+                }
             }
 
             const staffList = await User.find(filter)
@@ -1153,12 +1172,20 @@ export class UserController {
 
     static async getStaffById(req: Request, res: Response, next: NextFunction) {
         try {
+            const callerId = req.user?.aud || req.user?.user_id || req.user?._id;
+            const caller = callerId ? await User.findById(callerId) : null;
+
             const user = await User.findById(req.params.id)
                 .populate('company_id', 'name')
                 .select('-password -verification_token');
                 
             if (!user) {
                 return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+            }
+
+            // Multi-Tenancy check
+            if (caller && caller.type !== 'super_admin' && String(user.company_id?._id || user.company_id) !== String(caller.company_id)) {
+                return res.status(403).json({ success: false, message: 'Acesso negado: Usuário pertence a outra empresa.' });
             }
 
             return res.status(200).json({
@@ -1173,30 +1200,44 @@ export class UserController {
     static async createStaff(req: Request, res: Response, next: NextFunction) {
         try {
             const { name, email, phone, password, type, role, technician_profile, company_id, status, permissions } = req.body;
+            const callerId = req.user?.aud || req.user?.user_id || req.user?._id;
+            const caller = callerId ? await User.findById(callerId) : null;
 
-            const existingUser = await User.findOne({ email });
+            const normalizedEmail = email?.trim().toLowerCase();
+            const existingUser = await User.findOne({ email: normalizedEmail });
             if (existingUser) {
                 return res
                     .status(422)
                     .json({ success: false, message: 'Já existe um usuário cadastrado com este e-mail.' });
             }
 
-            const hash = await Utils.encryptPassword(password || '123456'); // senha padrão simples caso vazia
+            const hash = await Utils.encryptPassword(password || '123456');
             const verification_token = Utils.generateVerificationToken();
+
+            let targetCompanyId = company_id || null;
+            let targetType = type || 'admin';
+
+            // Se o criador for lojista (company_owner), força o vínculo com sua empresa e restringe tipos
+            if (caller && caller.type !== 'super_admin') {
+                targetCompanyId = caller.company_id || null;
+                if (targetType === 'super_admin' || targetType === 'company_owner') {
+                    targetType = 'admin';
+                }
+            }
 
             const newUser = new User({
                 name,
-                email: email?.trim().toLowerCase(),
+                email: normalizedEmail,
                 phone: phone ? String(phone).replace(/\D/g, '') : null,
-                type: type || 'admin',
+                type: targetType,
+                role: role || (targetType === 'super_admin' ? 'root' : targetType === 'company_owner' ? 'owner' : undefined),
                 password: hash,
-                company_id: company_id || null,
+                company_id: targetCompanyId,
                 status: status || 'active',
                 email_verified: true,
                 verification_token,
                 verification_token_time: Date.now() + new Utils().MAX_TOKEN_TIME,
                 permissions: permissions || [],
-                role: role || undefined,
                 technician_profile: technician_profile || undefined
             });
 
@@ -1214,10 +1255,17 @@ export class UserController {
     static async updateStaff(req: Request, res: Response, next: NextFunction) {
         try {
             const { name, email, phone, type, role, technician_profile, company_id, status, password, permissions } = req.body;
+            const callerId = req.user?.aud || req.user?.user_id || req.user?._id;
+            const caller = callerId ? await User.findById(callerId) : null;
 
             const user = await User.findById(req.params.id);
             if (!user) {
                 return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+            }
+
+            // Multi-Tenancy check
+            if (caller && caller.type !== 'super_admin' && String(user.company_id) !== String(caller.company_id)) {
+                return res.status(403).json({ success: false, message: 'Acesso negado: Usuário pertence a outra empresa.' });
             }
 
             if (name !== undefined) user.name = name;
@@ -1225,8 +1273,12 @@ export class UserController {
             if (phone !== undefined) {
                 user.phone = phone ? String(phone).replace(/\D/g, '') : undefined;
             }
-            if (type !== undefined) user.type = type;
-            if (company_id !== undefined) user.company_id = company_id || null;
+            if (type !== undefined && (caller?.type === 'super_admin' || (type !== 'super_admin' && type !== 'company_owner'))) {
+                user.type = type;
+            }
+            if (company_id !== undefined && caller?.type === 'super_admin') {
+                user.company_id = company_id || null;
+            }
             if (status !== undefined) user.status = status;
             
             if (role !== undefined) user.role = role;
