@@ -118,6 +118,13 @@ export class ServiceOrderController {
 
             const initialStatus = req.body.current_status || (cleanCollaboratorId ? 'AGENDADO' : 'SOLICITADO');
 
+            // Regra de Negócio: Não permite criar OS em deslocamento ou execução sem técnico atribuído
+            const executionStatuses = ['EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO', 'CONCLUIDO'];
+            if (executionStatuses.includes(initialStatus) && !cleanCollaboratorId) {
+                req.errorStatus = 422;
+                throw new Error(`Não é possível definir o status '${initialStatus}' sem um técnico atribuído à Ordem de Serviço.`);
+            }
+
             // Cálculo do score da matriz GUT (Padrão 1 se não fornecido)
             const gravity = Number(gut_gravity) || 1;
             const urgency = Number(gut_urgency) || 1;
@@ -196,6 +203,13 @@ export class ServiceOrderController {
             if (!order) {
                 req.errorStatus = 404;
                 throw new Error('ServiceOrder not found');
+            }
+
+            // Regra de Negócio: Não permite avançar para deslocamento ou execução sem técnico atribuído
+            const executionStatuses = ['EM_DESLOCAMENTO', 'CHECK_IN', 'EM_EXECUCAO', 'CONCLUIDO'];
+            if (executionStatuses.includes(status) && !order.collaborator_id) {
+                req.errorStatus = 422;
+                throw new Error(`Não é possível alterar o status para '${status}' sem um técnico atribuído à Ordem de Serviço.`);
             }
 
             order.current_status = status;
