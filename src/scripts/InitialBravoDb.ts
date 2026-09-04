@@ -110,6 +110,7 @@ async function seedDatabase() {
         email: 'admin@bravoinstalacoes.com.br',
         password: hashedPassword,
         type: 'super_admin',
+        phone: '11999990000',
         status: 'active'
     });
 
@@ -118,6 +119,7 @@ async function seedDatabase() {
         email: 'supervisor@bravoinstalacoes.com.br',
         password: hashedPassword,
         type: 'super_staff',
+        phone: '11999990001',
         status: 'active',
         role: 'Supervisor'
     });
@@ -127,6 +129,7 @@ async function seedDatabase() {
         email: 'operador@bravoinstalacoes.com.br',
         password: hashedPassword,
         type: 'super_staff',
+        phone: '11999990002',
         status: 'active',
         role: 'Operador'
     });
@@ -293,6 +296,7 @@ async function seedDatabase() {
         password: hashedPassword,
         type: 'company_owner',
         company_id: zeDelivery._id,
+        phone: '11988880001',
         status: 'active'
     });
 
@@ -302,6 +306,7 @@ async function seedDatabase() {
         password: hashedPassword,
         type: 'company_owner',
         company_id: flashLtda._id,
+        phone: '11988880002',
         status: 'active'
     });
 
@@ -311,6 +316,7 @@ async function seedDatabase() {
         password: hashedPassword,
         type: 'company_owner',
         company_id: ambev._id,
+        phone: '11988880003',
         status: 'active'
     });
     console.log('✅ Proprietários de empresas criados.');
@@ -323,6 +329,7 @@ async function seedDatabase() {
         type: 'collaborator',
         role: 'Técnico de Campo',
         company_id: zeDelivery._id,
+        phone: '11977770001',
         status: 'active'
     });
 
@@ -333,6 +340,7 @@ async function seedDatabase() {
         type: 'collaborator',
         role: 'Supervisor',
         company_id: zeDelivery._id,
+        phone: '11977770002',
         status: 'active'
     });
 
@@ -343,6 +351,7 @@ async function seedDatabase() {
         type: 'collaborator',
         role: 'Técnico de Campo',
         company_id: flashLtda._id,
+        phone: '11977770003',
         status: 'active'
     });
 
@@ -353,6 +362,7 @@ async function seedDatabase() {
         type: 'collaborator',
         role: 'Operador',
         company_id: flashLtda._id,
+        phone: '11977770004',
         status: 'active'
     });
 

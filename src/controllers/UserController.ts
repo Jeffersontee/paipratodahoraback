@@ -363,7 +363,7 @@ export class UserController {
                 _id: user._id,
                 email: user.email,
                 email_verified: user.email_verified,
-                phone: user.phone,
+                phone: user.phone || null,
                 cpf: user.cpf || null,
                 photo: user.photo || null,
                 name: user.name,
@@ -1186,8 +1186,8 @@ export class UserController {
 
             const newUser = new User({
                 name,
-                email,
-                phone,
+                email: email?.trim().toLowerCase(),
+                phone: phone ? String(phone).replace(/\D/g, '') : null,
                 type: type || 'admin',
                 password: hash,
                 company_id: company_id || null,
@@ -1220,12 +1220,14 @@ export class UserController {
                 return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
             }
 
-            user.name = name || user.name;
-            user.email = email || user.email;
-            user.phone = phone || user.phone;
-            user.type = type || user.type;
-            user.company_id = company_id || null;
-            user.status = status || user.status;
+            if (name !== undefined) user.name = name;
+            if (email !== undefined) user.email = email.trim().toLowerCase();
+            if (phone !== undefined) {
+                user.phone = phone ? String(phone).replace(/\D/g, '') : undefined;
+            }
+            if (type !== undefined) user.type = type;
+            if (company_id !== undefined) user.company_id = company_id || null;
+            if (status !== undefined) user.status = status;
             
             if (role !== undefined) user.role = role;
             if (technician_profile !== undefined) user.technician_profile = technician_profile;

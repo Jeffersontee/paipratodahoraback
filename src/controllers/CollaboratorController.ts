@@ -35,7 +35,7 @@ export class CollaboratorController {
             const collaboratorData: any = {
                 name,
                 email,
-                phone: phone || null,
+                phone: phone ? String(phone).replace(/\D/g, '') : null,
                 password: hash,
                 type: 'collaborator',
                 role,
@@ -128,11 +128,13 @@ export class CollaboratorController {
                 });
             }
 
-            collaborator.name = name || collaborator.name;
-            collaborator.email = email || collaborator.email;
-            collaborator.phone = phone || collaborator.phone;
-            collaborator.role = role || collaborator.role;
-            collaborator.status = status || collaborator.status;
+            if (name !== undefined) collaborator.name = name;
+            if (email !== undefined) collaborator.email = email.trim().toLowerCase();
+            if (phone !== undefined) {
+                collaborator.phone = phone ? String(phone).replace(/\D/g, '') : undefined;
+            }
+            if (role !== undefined) collaborator.role = role;
+            if (status !== undefined) collaborator.status = status;
 
             if (password) {
                 collaborator.password = await Utils.encryptPassword(password);
