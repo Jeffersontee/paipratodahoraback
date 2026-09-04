@@ -10,7 +10,62 @@ export class PlanController {
     static async getPlans(req: Request, res: Response, next: NextFunction) {
         try {
             // Busca todos os planos
-            const plans = await Plan.find().lean();
+            let plans = await Plan.find().lean();
+
+            if (plans.length === 0) {
+                const defaultPlans = [
+                    {
+                        name: 'Trial (Degustação)',
+                        price: 0,
+                        billing_cycle: 'monthly',
+                        max_services: 3,
+                        max_units: 1,
+                        max_users: 1,
+                        catalog_module_enabled: true,
+                        description: 'Plano gratuito de avaliação com recursos básicos.',
+                        status: 'active',
+                        features: ['Até 3 serviços no catálogo', '1 filial / unidade', '1 usuário de acesso']
+                    },
+                    {
+                        name: 'Bronze (Básico)',
+                        price: 99.90,
+                        billing_cycle: 'monthly',
+                        max_services: 5,
+                        max_units: 1,
+                        max_users: 2,
+                        catalog_module_enabled: true,
+                        description: 'Ideal para prestadores individuais e pequenas empresas.',
+                        status: 'active',
+                        features: ['Até 5 serviços no catálogo', '1 filial', '2 usuários', 'Agenda 365']
+                    },
+                    {
+                        name: 'Prata (Profissional)',
+                        price: 199.90,
+                        billing_cycle: 'monthly',
+                        max_services: 20,
+                        max_units: 5,
+                        max_users: 10,
+                        catalog_module_enabled: true,
+                        description: 'Para empresas em expansão com múltiplos técnicos.',
+                        status: 'active',
+                        features: ['Até 20 serviços no catálogo', '5 filiais', '10 usuários', 'Agenda e Ordens de Serviço', 'Módulo Catálogo']
+                    },
+                    {
+                        name: 'Ouro (Corporativo)',
+                        price: 349.90,
+                        billing_cycle: 'monthly',
+                        max_services: 100,
+                        max_units: 20,
+                        max_users: 50,
+                        catalog_module_enabled: true,
+                        description: 'Plano corporativo completo sem restrições.',
+                        status: 'active',
+                        features: ['Catálogo ilimitado', '20 filiais', '50 usuários', 'Suporte VIP']
+                    }
+                ];
+                await Plan.insertMany(defaultPlans);
+                plans = await Plan.find().lean();
+            }
 
             // Para cada plano, busca os estabelecimentos vinculados (No Banco Central HubDB)
             const plansWithEstablishments = await Promise.all(
@@ -19,7 +74,7 @@ export class PlanController {
                         plan_id: plan._id,
                         status: 'active'
                     })
-                        .populate('establishment_id', 'res_name cover status')
+                        .populate('company_id', 'name active')
                         .lean();
                     return {
                         ...plan,
@@ -108,7 +163,7 @@ export class PlanController {
         }
         const { subscriptionId } = req.params;
         const user = req.user; // User making the request
-        let establishmentId = req.body.establishment_id; // For Super Admin
+        let companyId = req.body.company_id; // For Super Admin
 
         try {
             if (!subscriptionId) {
@@ -116,17 +171,17 @@ export class PlanController {
                 throw new Error('ID da assinatura é obrigatório.');
             }
 
-            // 1. Validar permissão e obter o establishment_id correto
-            if (user.type === 'establishment_admin') {
-                if (!user.establishment_id) {
+            // 1. Validar permissão e obter o company_id correto
+            if (user.type === 'company_owner' || user.type === 'admin') {
+                if (!user.company_id) {
                     req.errorStatus = 403;
-                    throw new Error('Acesso negado: Seu usuário não possui um estabelecimento vinculado.');
+                    throw new Error('Acesso negado: Seu usuário não possui uma empresa vinculada.');
                 }
-                establishmentId = user.establishment_id;
+                companyId = user.company_id;
             } else if (user.type === 'super_admin') {
-                if (!establishmentId) {
+                if (!companyId) {
                     req.errorStatus = 400;
-                    throw new Error('Para Super Admin, o campo establishment_id é obrigatório no corpo da requisição.');
+                    throw new Error('Para Super Admin, o campo company_id é obrigatório no corpo da requisição.');
                 }
             } else {
                 req.errorStatus = 403;
@@ -141,10 +196,10 @@ export class PlanController {
                 throw new Error('Assinatura não encontrada.');
             }
 
-            // 3. Verificar se a assinatura pertence ao estabelecimento correto (segurança)
-            if (String(subscription.establishment_id) !== String(establishmentId)) {
+            // 3. Verificar se a assinatura pertence à empresa correta (segurança)
+            if (String(subscription.company_id) !== String(companyId)) {
                 req.errorStatus = 403;
-                throw new Error('Acesso negado: Esta assinatura não pertence ao seu estabelecimento.');
+                throw new Error('Acesso negado: Esta assinatura não pertence à sua empresa.');
             }
 
             const plan: any = subscription.plan_id;
@@ -169,19 +224,18 @@ export class PlanController {
                 throw new Error('Configuração de pagamento global (Super Admin) não encontrada ou incompleta.');
             }
 
-            // 4. Gerar external_reference único para o Mercado Pago: SUB_{subscriptionId}__{establishmentId}
-            const externalReference = `SUB_${subscriptionId}__${establishmentId}`;
+            // 4. Gerar external_reference único para o Mercado Pago: SUB_{subscriptionId}__{companyId}
+            const externalReference = `SUB_${subscriptionId}__${companyId}`;
 
             // 5. Criar pagamento PIX no Mercado Pago
             const paymentData = {
-                name: user.name, // Nome do usuário logado
-                email: user.email, // Email do usuário logado
+                name: user.name,
+                email: user.email,
                 amount: amount,
-                cpf: req.body.cpf || '000.000.000-00', // CPF pode vir do body ou ser um placeholder
+                cpf: req.body.cpf || '000.000.000-00',
                 external_reference: externalReference
             };
 
-            // Unificamos a configuração injetando o provedor para que o Strategy Pattern funcione
             const paymentConfig = {
                 ...superAdmin.global_payment_config,
                 gateway_provider: superAdmin.gateway_provider
@@ -190,7 +244,6 @@ export class PlanController {
             const gateway = PaymentProvider.getGateway(paymentConfig);
             const paymentResponse = await gateway.createPix(paymentData);
 
-            // 6. Retornar os dados do PIX para o Angular (QR Code e Copia e Cola)
             return res.status(201).json(paymentResponse);
         } catch (e: any) {
             console.error('❌ [RENEW SUBSCRIPTION PIX ERROR]:', e.message);
@@ -198,7 +251,7 @@ export class PlanController {
                 action: 'SUBSCRIPTION_RENEWAL_PIX_FAILED',
                 module: 'SUBSCRIPTION',
                 severity: 'error',
-                details: { error: e.message, subscriptionId: subscriptionId, establishmentId: establishmentId }
+                details: { error: e.message, subscriptionId: subscriptionId, companyId: companyId }
             });
             next(e);
         }

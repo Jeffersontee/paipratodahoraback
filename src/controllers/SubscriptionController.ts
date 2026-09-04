@@ -22,15 +22,15 @@ export class SubscriptionController {
                 throw new Error('Sessão inválida');
             }
 
-            if (user.type === 'establishment_admin') {
+            if (user.type === 'company_owner' || user.type === 'admin') {
                 if (!user.company_id || !mongoose.Types.ObjectId.isValid(String(user.company_id))) {
                     req.errorStatus = 400;
-                    throw new Error('ID do empresa inválido ou ausente no token do usuário.');
+                    throw new Error('ID da empresa inválido ou ausente no token do usuário.');
                 }
                 query.company_id = new mongoose.Types.ObjectId(String(user.company_id));
             }
 
-            // Permite filtrar assinaturas de um empresa específico (Útil para o Super Admin)
+            // Permite filtrar assinaturas de uma empresa específica (Útil para o Super Admin)
             if (company_id) {
                 query.company_id = company_id;
             }
@@ -44,8 +44,8 @@ export class SubscriptionController {
             }
 
             const subscriptions = await Subscription.find(query)
-                .populate('company_id', 'res_name')
-                .populate('plan_id', 'name price')
+                .populate('company_id', 'name active')
+                .populate('plan_id', 'name price max_services max_units max_users')
                 .sort({ created_at: -1 })
                 .lean();
 
@@ -53,7 +53,7 @@ export class SubscriptionController {
             const formattedSubscriptions = subscriptions.map((sub: any) => ({
                 id: sub._id,
                 company_id: sub.company_id?._id || sub.company_id,
-                company_name: sub.company_id?.res_name || 'N/A',
+                company_name: sub.company_id?.name || 'N/A',
                 plan_name: sub.plan_id?.name || 'Trial',
                 amount: sub.price_at_subscription || sub.plan_id?.price || 0,
                 status: (() => {
@@ -85,16 +85,16 @@ export class SubscriptionController {
             }
 
             const subscription = await Subscription.findById(id)
-                .populate('company_id', 'res_name')
-                .populate('plan_id', 'name price')
+                .populate('company_id', 'name active')
+                .populate('plan_id', 'name price max_services max_units max_users allowed_services catalog_module_enabled')
                 .lean();
 
             if (!subscription) throw new Error('Assinatura não encontrada');
 
             // Proteção: Lojista só vê sua própria assinatura
             if (
-                user.type === 'establishment_admin' &&
-                String((subscription.company_id as any)?._id) !== String(user.company_id)
+                (user.type === 'company_owner' || user.type === 'admin') &&
+                String((subscription.company_id as any)?._id || subscription.company_id) !== String(user.company_id)
             ) {
                 req.errorStatus = 403;
                 throw new Error('Acesso negado: Você não tem permissão para ver esta assinatura.');

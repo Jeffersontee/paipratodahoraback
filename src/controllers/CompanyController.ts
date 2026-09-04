@@ -74,13 +74,14 @@ export class CompanyController {
                 }
             }
 
-            // Cria a assinatura em status trialing (trial) por padrão
+            // Cria a assinatura vinculada ao plano
             const trialDays = 14;
             const endDate = new Date();
             endDate.setDate(endDate.getDate() + trialDays);
 
             const subscription = new Subscription({
                 company_id: company._id,
+                plan_id: body.plan_id || undefined,
                 status: 'trialing',
                 current_period_end: endDate,
                 price_at_subscription: 0
@@ -91,6 +92,8 @@ export class CompanyController {
             company.next_payment_date = endDate;
             company.subscription_status = 'trial';
             company.subscription_id = subscription._id;
+            if (body.plan_id) company.plan_id = body.plan_id as any;
+            if (body.catalog_module_enabled !== undefined) company.catalog_module_enabled = body.catalog_module_enabled;
             await company.save();
 
             return res.status(201).json({
@@ -130,10 +133,10 @@ export class CompanyController {
 
     static async update(req: Request, res: Response, next: NextFunction) {
         try {
-            const { name, owner_name, short_name, description, cnpj, email, phone, active, services } = req.body;
+            const { name, owner_name, short_name, description, cnpj, email, phone, active, services, plan_id, catalog_module_enabled } = req.body;
             const company = await Company.findByIdAndUpdate(
                 req.params.id,
-                { name, owner_name, short_name, description, cnpj, email, phone, active, services },
+                { name, owner_name, short_name, description, cnpj, email, phone, active, services, plan_id, catalog_module_enabled },
                 { new: true, runValidators: true }
             );
 

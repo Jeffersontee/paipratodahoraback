@@ -21,6 +21,9 @@ import ServiceOrderRouter from './routers/ServiceOrderRouter';
 import DashboardRouter from './routers/DashboardRouter';
 import AppConfigRouter from './routers/AppConfigRouter';
 import AppearanceRouter from './routers/AppearanceRouter';
+import PlanRouter from './routers/PlanRouter';
+import SubscriptionRouter from './routers/SubscriptionRouter';
+import InvoiceRouter from './routers/InvoiceRouter';
 
 export class Server {
     public app: express.Application = express();
@@ -202,6 +205,9 @@ export class Server {
         this.app.use('/api/dashboard', DashboardRouter);
         this.app.use('/api/configs', AppConfigRouter);
         this.app.use('/api/appearance', AppearanceRouter);
+        this.app.use('/api/plans', PlanRouter);
+        this.app.use('/api/subscriptions', SubscriptionRouter);
+        this.app.use('/api/invoices', InvoiceRouter);
     }
 
     error404Handler() {
