@@ -11,19 +11,52 @@ export class ServiceOrderController {
     static async list(req: Request, res: Response, next: NextFunction) {
         try {
             const filter: any = {};
-            if (req.query.company_id) {
-                filter.company_id = req.query.company_id;
+            const authUser = (req as any).user;
+
+            // Multi-tenant & Role-based automatic filtering
+            if (authUser) {
+                if (authUser.type === 'super_admin' || authUser.type === 'super_staff') {
+                    // Super admin: Visão global irrestrita (aceita filtros opcionais via query)
+                    if (req.query.company_id) {
+                        filter.company_id = req.query.company_id;
+                    }
+                    if (req.query.collaborator_id) {
+                        filter.collaborator_id = req.query.collaborator_id;
+                    }
+                    if (req.query.user_id) {
+                        filter.user_id = req.query.user_id;
+                    }
+                } else if (authUser.type === 'company_owner' || (authUser.company_id && authUser.type !== 'collaborator')) {
+                    // Dono ou Staff de Empresa: Estritamente restrito à sua própria empresa
+                    filter.company_id = authUser.company_id;
+                    if (req.query.collaborator_id) {
+                        filter.collaborator_id = req.query.collaborator_id;
+                    }
+                    if (req.query.user_id) {
+                        filter.user_id = req.query.user_id;
+                    }
+                } else if (authUser.type === 'collaborator') {
+                    // Colaborador / Técnico:
+                    if (authUser.role === 'operator' && authUser.company_id) {
+                        filter.company_id = authUser.company_id;
+                    } else {
+                        // Técnico de campo: estritamente suas próprias ordens de serviço
+                        filter.collaborator_id = authUser._id;
+                    }
+                } else if (authUser.type === 'user') {
+                    // Cliente final: somente suas próprias ordens
+                    filter.user_id = authUser._id;
+                }
+            } else {
+                // Fallback para requisições sem contexto de usuário (se houver query explícita)
+                if (req.query.company_id) filter.company_id = req.query.company_id;
+                if (req.query.collaborator_id) filter.collaborator_id = req.query.collaborator_id;
+                if (req.query.user_id) filter.user_id = req.query.user_id;
             }
+
+            // Filtro opcional por Unidade/Filial
             if (req.query.unit_id) {
                 filter.unit_id = req.query.unit_id;
-            }
-            if (req.query.collaborator_id) {
-                filter.collaborator_id = req.query.collaborator_id;
-            }
-            const authUser = (req as any).user;
-            const targetUserId = req.query.user_id || (authUser && authUser.type === 'user' ? authUser._id : null);
-            if (targetUserId) {
-                filter.user_id = targetUserId;
             }
 
             if (req.query.start_date || req.query.end_date) {
