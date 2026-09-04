@@ -10,9 +10,20 @@ import Subscription from '../models/subscription.model';
 import Invoice from '../models/invoice.model';
 import HelpCategory from '../models/HelpCategory';
 
+import { getEnvironmentVariables } from '../environments/enviroment';
+
 dotenv.config();
 
-const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.DB_URI || 'mongodb://localhost:27017/bravo-instalacoes';
+const env = getEnvironmentVariables();
+const MONGO_URI =
+    env.db_uri ||
+    process.env.PROD_DB_URI ||
+    process.env.STAGING_DB_URI ||
+    process.env.DEV_DB_URI ||
+    process.env.MONGODB_URI ||
+    process.env.MONGO_URI ||
+    process.env.DB_URI ||
+    'mongodb://localhost:27017/bravo-instalacoes';
 const isProd = process.env.NODE_ENV === 'production';
 const isForce = process.env.FORCE_SEED === 'true' || process.env.FORCE === 'true';
 

@@ -5,12 +5,25 @@ import { Company } from '../models/company.model';
 import { Unit } from '../models/unit.model';
 import { Service } from '../models/service.model';
 import { ServiceOrder } from '../models/serviceorder.model';
+import Plan from '../models/plan.model';
+import Subscription from '../models/subscription.model';
+import Invoice from '../models/invoice.model';
 import HelpCategory from '../models/HelpCategory';
-import bcrypt from 'bcrypt';
+import { initBravoBase } from './InitialBravoDb';
+import { getEnvironmentVariables } from '../environments/enviroment';
 
 dotenv.config();
 
-const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/bravo-instalacoes';
+const env = getEnvironmentVariables();
+const MONGO_URI =
+    env.db_uri ||
+    process.env.PROD_DB_URI ||
+    process.env.STAGING_DB_URI ||
+    process.env.DEV_DB_URI ||
+    process.env.MONGODB_URI ||
+    process.env.MONGO_URI ||
+    process.env.DB_URI ||
+    'mongodb://localhost:27017/bravo-instalacoes';
 
 async function clearDatabase() {
     console.log('🧹 Limpando coleções antigas...');
@@ -20,71 +33,175 @@ async function clearDatabase() {
     await Service.deleteMany({});
     await ServiceOrder.deleteMany({});
     await HelpCategory.deleteMany({});
+    await Plan.deleteMany({});
+    await Subscription.deleteMany({});
+    await Invoice.deleteMany({});
     console.log('✅ Coleções limpas.');
 }
 
-async function seedDatabase() {
-    console.log('🌱 Iniciando sementeira rica do Bravo DB...');
+async function seedTestEnvironment() {
+    console.log('🌱 Iniciando sementeira rica de TESTES & DESENVOLVIMENTO para o Bravo DB...');
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('Bravo@25', salt);
-
-    // 1. USUÁRIOS GLOBAIS (STAFF DO SISTEMA)
-    const superAdmin = await User.create({
-        name: 'Super Admin',
-        email: 'admin@bravoinstalacoes.com.br',
-        password: hashedPassword,
-        type: 'super_admin',
-        role: 'root',
-        phone: '11999990000',
-        status: 'active'
-    });
-
-    const superSupervisor = await User.create({
-        name: 'Carlos Supervisor Geral',
-        email: 'supervisor@bravoinstalacoes.com.br',
-        password: hashedPassword,
-        type: 'super_staff',
-        role: 'supervisor',
-        phone: '11999990001',
-        status: 'active'
-    });
-
-    const superOperator = await User.create({
-        name: 'Luciana Operadora Geral',
-        email: 'operador@bravoinstalacoes.com.br',
-        password: hashedPassword,
-        type: 'super_staff',
-        role: 'backoffice',
-        phone: '11999990002',
-        status: 'active'
-    });
-    console.log('✅ Usuários globais (Staff) criados.');
+    // 1. INICIALIZA A ESTRUTURA BASE DA APLICAÇÃO (Super Admin, Planos, Catálogo Global, Central de Ajuda)
+    const { plans, hashedPassword } = await initBravoBase();
+    const { planTrial, planPro, planPremium } = plans;
 
     // 2. EMPRESAS PARCEIRAS (COMPANIES)
+    console.log('🏢 Semeando Empresas Parceiras de Teste (Flash, Zé Delivery, Ambev)...');
     const zeDelivery = await Company.create({
         name: 'Zé Delivery',
         cnpj: '12.345.678/0001-99',
         status: 'ACTIVE',
-        subscription_status: 'active'
+        subscription_status: 'active',
+        plan_id: planPro._id,
+        plan_name: planPro.name,
+        monthly_revenue: 199
     });
 
     const flashLtda = await Company.create({
         name: 'Flash Ltda',
         cnpj: '00.000.000/0000-50',
         status: 'ACTIVE',
-        subscription_status: 'active'
+        subscription_status: 'active',
+        plan_id: planPremium._id,
+        plan_name: planPremium.name,
+        monthly_revenue: 349
     });
 
     const ambev = await Company.create({
         name: 'Ambev Distribuidora',
         cnpj: '99.999.999/0001-22',
         status: 'ACTIVE',
-        subscription_status: 'trialing'
+        subscription_status: 'trialing',
+        plan_id: planTrial._id,
+        plan_name: planTrial.name,
+        monthly_revenue: 0
     });
-    console.log('✅ Empresas (Zé Delivery, Flash, Ambev) criadas.');
+    console.log('✅ Empresas criadas.');
 
-    // 3. PROPRIETÁRIOS DE EMPRESAS (COMPANY OWNERS)
+    // 3. ASSINATURAS SAAS DAS EMPRESAS (SUBSCRIPTIONS)
+    console.log('💳 Semeando Assinaturas SaaS das Empresas...');
+    const now = new Date();
+    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const trialEnd = new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000);
+
+    const subFlash = await Subscription.create({
+        company_id: flashLtda._id,
+        plan_id: planPremium._id,
+        status: 'active',
+        price_at_subscription: planPremium.price,
+        current_period_start: periodStart,
+        current_period_end: periodEnd,
+        payment_method: 'pix',
+        payment_status: 'paid',
+        monthly_revenue: planPremium.price,
+        total_revenue: planPremium.price * 9
+    });
+
+    const subZD = await Subscription.create({
+        company_id: zeDelivery._id,
+        plan_id: planPro._id,
+        status: 'active',
+        price_at_subscription: planPro.price,
+        current_period_start: periodStart,
+        current_period_end: periodEnd,
+        payment_method: 'pix',
+        payment_status: 'paid',
+        monthly_revenue: planPro.price,
+        total_revenue: planPro.price * 8
+    });
+
+    const subAmbev = await Subscription.create({
+        company_id: ambev._id,
+        plan_id: planTrial._id,
+        status: 'trialing',
+        price_at_subscription: 0,
+        current_period_start: now,
+        current_period_end: trialEnd,
+        payment_method: 'pix',
+        payment_status: 'pending',
+        monthly_revenue: 0,
+        total_revenue: 0
+    });
+    console.log('✅ Assinaturas SaaS criadas.');
+
+    // 4. HISTÓRICO DE FATURAS MENSAIS (INVOICES - PARA GRÁFICOS E COBRANÇA)
+    console.log('💰 Semeando Histórico de Faturas...');
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const invoiceDocs: any[] = [];
+
+    // Faturas históricas pagas para Flash Ltda
+    for (let m = 0; m < currentMonth; m++) {
+        const dueDate = new Date(currentYear, m, 10);
+        const payDate = new Date(currentYear, m, 9);
+        invoiceDocs.push({
+            company_id: flashLtda._id,
+            subscription_id: subFlash._id,
+            amount: 349,
+            status: 'paid',
+            payment_method: 'pix',
+            payment_date: payDate,
+            due_date: dueDate,
+            notes: `Mensalidade SaaS Ciclo ${m + 1}/${currentYear} (Plano Premium)`
+        });
+    }
+
+    // Fatura pendente do mês atual para Flash Ltda
+    invoiceDocs.push({
+        company_id: flashLtda._id,
+        subscription_id: subFlash._id,
+        amount: 349,
+        status: 'pending',
+        payment_method: 'pix',
+        due_date: new Date(currentYear, currentMonth, 15),
+        notes: `Mensalidade SaaS Ciclo Atual ${currentMonth + 1}/${currentYear} (Plano Premium)`
+    });
+
+    // Faturas históricas pagas para Zé Delivery
+    for (let m = 1; m < currentMonth; m++) {
+        const dueDate = new Date(currentYear, m, 5);
+        const payDate = new Date(currentYear, m, 5);
+        invoiceDocs.push({
+            company_id: zeDelivery._id,
+            subscription_id: subZD._id,
+            amount: 199,
+            status: 'paid',
+            payment_method: 'pix',
+            payment_date: payDate,
+            due_date: dueDate,
+            notes: `Mensalidade SaaS Ciclo ${m + 1}/${currentYear} (Plano Pro)`
+        });
+    }
+
+    // Fatura do mês atual pendente para Zé Delivery
+    invoiceDocs.push({
+        company_id: zeDelivery._id,
+        subscription_id: subZD._id,
+        amount: 199,
+        status: 'pending',
+        payment_method: 'pix',
+        due_date: new Date(currentYear, currentMonth, 20),
+        notes: `Mensalidade SaaS Ciclo Atual ${currentMonth + 1}/${currentYear} (Plano Pro)`
+    });
+
+    // Fatura vencida de teste (Overdue)
+    invoiceDocs.push({
+        company_id: zeDelivery._id,
+        subscription_id: subZD._id,
+        amount: 199,
+        status: 'overdue',
+        payment_method: 'pix',
+        due_date: new Date(currentYear, currentMonth - 1, 5),
+        notes: 'Mensalidade com atraso em cobrança preventiva.'
+    });
+
+    await Invoice.insertMany(invoiceDocs);
+    console.log(`✅ ${invoiceDocs.length} Faturas mensais semeadas.`);
+
+    // 5. PROPRIETÁRIOS DAS EMPRESAS (COMPANY OWNERS)
+    console.log('👤 Semeando Proprietários e Equipe das Empresas...');
     const joaoOwner = await User.create({
         name: 'João Proprietário (Zé Delivery)',
         email: 'joao@zedelivery.com',
@@ -93,7 +210,8 @@ async function seedDatabase() {
         role: 'owner',
         company_id: zeDelivery._id,
         phone: '11988880001',
-        status: 'active'
+        status: 'active',
+        email_verified: true
     });
 
     const barryOwner = await User.create({
@@ -104,7 +222,8 @@ async function seedDatabase() {
         role: 'owner',
         company_id: flashLtda._id,
         phone: '11988880002',
-        status: 'active'
+        status: 'active',
+        email_verified: true
     });
 
     const ambevOwner = await User.create({
@@ -115,50 +234,21 @@ async function seedDatabase() {
         role: 'owner',
         company_id: ambev._id,
         phone: '11988880003',
-        status: 'active'
-    });
-    console.log('✅ Proprietários de empresas criados.');
-
-    // 4. COLABORADORES E OPERADORES ASSOCIADOS
-    const carlosTecnicoZD = await User.create({
-        name: 'Carlos Técnico',
-        email: 'carlos@zedelivery.com',
-        password: hashedPassword,
-        type: 'collaborator',
-        role: 'technician',
-        technician_profile: {
-            specialties: ['Elétrica', 'Climatização'],
-            is_available_now: true
-        },
-        company_id: zeDelivery._id,
-        phone: '11977770001',
-        status: 'active'
+        status: 'active',
+        email_verified: true
     });
 
-    const lucasSupervisorZD = await User.create({
-        name: 'Lucas Supervisor ZD',
-        email: 'lucas@zedelivery.com',
+    // 6. GERENTES, ATENDENTES E TÉCNICOS ASSOCIADOS
+    const gestorFlash = await User.create({
+        name: 'Gestor Flash',
+        email: 'gestor@teste.com',
         password: hashedPassword,
-        type: 'collaborator',
-        role: 'supervisor',
-        company_id: zeDelivery._id,
-        phone: '11977770002',
-        status: 'active'
-    });
-
-    const pedroTecnicoFlash = await User.create({
-        name: 'Pedro Técnico Flash',
-        email: 'pedro@flash.com',
-        password: hashedPassword,
-        type: 'collaborator',
-        role: 'technician',
-        technician_profile: {
-            specialties: ['Hidráulica', 'CFTV'],
-            is_available_now: true
-        },
+        type: 'admin',
+        role: 'manager',
         company_id: flashLtda._id,
-        phone: '11977770003',
-        status: 'active'
+        phone: '11977770008',
+        status: 'active',
+        email_verified: true
     });
 
     const anaOperadoraFlash = await User.create({
@@ -169,22 +259,52 @@ async function seedDatabase() {
         role: 'backoffice',
         company_id: flashLtda._id,
         phone: '11977770004',
-        status: 'active'
+        status: 'active',
+        email_verified: true
     });
 
-    const thiagoGlobal = await User.create({
-        name: 'Thiago Global',
-        email: 'thiago@bravoinstalacoes.com.br',
+    const pedroTecnicoFlash = await User.create({
+        name: 'Pedro Técnico Flash',
+        email: 'pedro@flash.com',
         password: hashedPassword,
         type: 'collaborator',
         role: 'technician',
         technician_profile: {
-            specialties: ['Geral', 'Elétrica'],
+            specialties: ['Hidráulica', 'CFTV', 'Serralheria'],
             is_available_now: true
         },
-        company_id: null,
-        phone: '11977770005',
-        status: 'active'
+        company_id: flashLtda._id,
+        phone: '11977770003',
+        status: 'active',
+        email_verified: true
+    });
+
+    const carlosTecnicoZD = await User.create({
+        name: 'Carlos Técnico ZD',
+        email: 'carlos@zedelivery.com',
+        password: hashedPassword,
+        type: 'collaborator',
+        role: 'technician',
+        technician_profile: {
+            specialties: ['Elétrica', 'Climatização'],
+            is_available_now: true
+        },
+        company_id: zeDelivery._id,
+        phone: '11977770001',
+        status: 'active',
+        email_verified: true
+    });
+
+    const lucasSupervisorZD = await User.create({
+        name: 'Lucas Supervisor ZD',
+        email: 'lucas@zedelivery.com',
+        password: hashedPassword,
+        type: 'collaborator',
+        role: 'supervisor',
+        company_id: zeDelivery._id,
+        phone: '11977770002',
+        status: 'active',
+        email_verified: true
     });
 
     const customerUser = await User.create({
@@ -194,14 +314,16 @@ async function seedDatabase() {
         type: 'user',
         role: 'customer',
         phone: '11988887777',
-        status: 'active'
+        status: 'active',
+        email_verified: true
     });
-    console.log('✅ Colaboradores e Cliente (user@user.com) criados.');
+    console.log('✅ Usuários de empresas e cliente final criados.');
 
-    // 5. UNIDADES / FILIAIS (UNITS COM DADOS DE CONTATO E CNPJ)
+    // 7. UNIDADES / FILIAIS (UNITS COM GERENTES E ACOMPANHANTES ATRIBUÍDOS)
+    console.log('📍 Semeando Filiais e Unidades Operacionais...');
     const VilaRe = await Unit.create({
         company_id: zeDelivery._id,
-        name: 'Vila Ré',
+        name: 'Unidade Vila Ré',
         cnpj: '12.345.678/0002-88',
         short_name: 'ZD-VR',
         phone: '(11) 98888-7777',
@@ -215,12 +337,13 @@ async function seedDatabase() {
             zipcode: '03658-010'
         },
         manager_id: joaoOwner._id,
-        follower_ids: [carlosTecnicoZD._id]
+        follower_ids: [carlosTecnicoZD._id],
+        status: 'ACTIVE'
     });
 
     const itaquera = await Unit.create({
         company_id: zeDelivery._id,
-        name: 'Itaquera',
+        name: 'Unidade Itaquera',
         cnpj: '12.345.678/0003-77',
         short_name: 'ZD-IT',
         phone: '(11) 96666-5555',
@@ -234,12 +357,13 @@ async function seedDatabase() {
             zipcode: '08295-000'
         },
         manager_id: joaoOwner._id,
-        follower_ids: [carlosTecnicoZD._id]
+        follower_ids: [carlosTecnicoZD._id],
+        status: 'ACTIVE'
     });
 
     const pinheiros = await Unit.create({
         company_id: zeDelivery._id,
-        name: 'Pinheiros',
+        name: 'Unidade Pinheiros',
         cnpj: '12.345.678/0004-66',
         short_name: 'ZD-PI',
         phone: '(11) 94444-3333',
@@ -253,12 +377,13 @@ async function seedDatabase() {
             zipcode: '05422-000'
         },
         manager_id: joaoOwner._id,
-        follower_ids: [carlosTecnicoZD._id]
+        follower_ids: [carlosTecnicoZD._id],
+        status: 'ACTIVE'
     });
 
     const paulista = await Unit.create({
         company_id: flashLtda._id,
-        name: 'Paulista',
+        name: 'Unidade Paulista',
         cnpj: '00.000.000/0002-40',
         short_name: 'FL-PA',
         phone: '(11) 91111-2222',
@@ -271,13 +396,14 @@ async function seedDatabase() {
             state: 'SP',
             zipcode: '01310-100'
         },
-        manager_id: barryOwner._id,
-        follower_ids: [pedroTecnicoFlash._id]
+        manager_id: gestorFlash._id,
+        follower_ids: [anaOperadoraFlash._id, pedroTecnicoFlash._id],
+        status: 'ACTIVE'
     });
 
     const joaoDias = await Unit.create({
         company_id: flashLtda._id,
-        name: 'João Dias',
+        name: 'Unidade João Dias',
         cnpj: '00.000.000/0003-30',
         short_name: 'FL-JD',
         phone: '(11) 92222-3333',
@@ -290,70 +416,80 @@ async function seedDatabase() {
             state: 'SP',
             zipcode: '05858-000'
         },
-        manager_id: barryOwner._id,
-        follower_ids: [pedroTecnicoFlash._id]
+        manager_id: gestorFlash._id,
+        follower_ids: [anaOperadoraFlash._id],
+        status: 'ACTIVE'
     });
-    console.log('✅ Unidades operacionais e filiais criadas.');
+    console.log('✅ Unidades e filiais com gestores e acompanhantes criadas.');
 
-    // 6. SERVIÇOS DO CATÁLOGO POR EMPRESA
+    // 8. SERVIÇOS DO CATÁLOGO ESPECÍFICOS POR EMPRESA
+    console.log('🛠️ Semeando Catálogo de Serviços por Empresa...');
     const servicesZD = await Service.insertMany([
         {
             company_id: zeDelivery._id,
             name: 'Manutenção de Quadro Elétrico',
-            category: 'ELÉTRICA',
+            category: 'Elétrica',
             price: 150.0,
             icon: 'flash-outline',
-            description: 'Revisão e aperto técnico'
+            description: 'Revisão geral e reaperto técnico de disjuntores.',
+            status: 'ACTIVE'
         },
         {
             company_id: zeDelivery._id,
-            name: 'Reparo em Vazamentos',
-            category: 'HIDRÁULICA/CIVIL',
+            name: 'Reparo em Vazamentos Hidráulicos',
+            category: 'Hidráulica',
             price: 200.0,
             icon: 'water-outline',
-            description: 'Reparo de vazamento hidráulico'
+            description: 'Detecção e conserto de vazamentos em tubulações e caixas.',
+            status: 'ACTIVE'
         },
         {
             company_id: zeDelivery._id,
-            name: 'Manutenção de Portões',
-            category: 'SERRALHERIA',
+            name: 'Manutenção de Portões Automáticos',
+            category: 'Serralheria',
             price: 300.0,
-            icon: 'build-outline',
-            description: 'Lubrificação e soldas'
+            icon: 'construct-outline',
+            description: 'Troca de cremalheiras, regulagem e lubrificação.',
+            status: 'ACTIVE'
         }
     ]);
 
     const servicesFlash = await Service.insertMany([
         {
             company_id: flashLtda._id,
-            name: 'Instalação de Disjuntor NEMA',
-            category: 'ELÉTRICA',
+            name: 'Instalação de Disjuntor NEMA/DIN',
+            category: 'Elétrica',
             price: 120.0,
             icon: 'flash-outline',
-            description: 'Instalação padrão'
+            description: 'Instalação e substituição padrão de disjuntores.',
+            status: 'ACTIVE'
         },
         {
             company_id: flashLtda._id,
-            name: 'Desobstrução Sanitária',
-            category: 'HIDRÁULICA/CIVIL',
+            name: 'Desobstrução Sanitária e Hidrojateamento',
+            category: 'Hidráulica',
             price: 180.0,
             icon: 'water-outline',
-            description: 'Limpeza de tubulações'
+            description: 'Limpeza de colunas e tubulações principais.',
+            status: 'ACTIVE'
         },
         {
             company_id: flashLtda._id,
-            name: 'Troca de Dobradiça Metálica',
-            category: 'SERRALHERIA',
+            name: 'Troca de Fechadura e Dobradiça Metálica',
+            category: 'Serralheria',
             price: 90.0,
             icon: 'key-outline',
-            description: 'Ajuste de portas'
+            description: 'Ajuste de portas blindadas e fechaduras digitais.',
+            status: 'ACTIVE'
         }
     ]);
-    console.log('✅ Serviços das empresas cadastrados.');
 
-    // 7. HISTÓRICO DE VISITAS E SOLICITAÇÕES (SERVICE ORDERS)
-    const today = new Date();
+    await Company.findByIdAndUpdate(zeDelivery._id, { services: servicesZD.map((s) => s._id) });
+    await Company.findByIdAndUpdate(flashLtda._id, { services: servicesFlash.map((s) => s._id) });
+    console.log('✅ Catálogos específicos vinculados às empresas.');
 
+    // 9. HISTÓRICO DE ORDENS DE SERVIÇO (SERVICE ORDERS & AGENDA 365)
+    console.log('📅 Semeando Ordens de Serviço operacionais para a Agenda 365 e KPIs...');
     const d1 = new Date('2026-01-15T10:00:00Z');
     const d2 = new Date('2026-02-10T14:00:00Z');
     const d3 = new Date('2026-03-22T09:00:00Z');
@@ -424,7 +560,7 @@ async function seedDatabase() {
             ]
         },
 
-        // ZÉ DELIVERY - Itaquera
+        // ZÉ DELIVERY - Itaquera & Pinheiros
         {
             company_id: zeDelivery._id,
             unit_id: itaquera._id,
@@ -445,49 +581,6 @@ async function seedDatabase() {
         },
         {
             company_id: zeDelivery._id,
-            unit_id: itaquera._id,
-            service_id: servicesZD[1]._id,
-            collaborator_id: carlosTecnicoZD._id,
-            scheduled_date: d4,
-            current_status: 'CONCLUIDO',
-            time_spent: '2.5',
-            km_driven: '24',
-            fuel_cost: '32',
-            zone: 'ZL',
-            address_override: 'Av. Itaquera, 5000 - Itaquera',
-            notes: 'Troca de encanamento trincado.',
-            timeline: [
-                { status: 'AGENDADO', timestamp: d4 },
-                { status: 'CONCLUIDO', timestamp: d4 }
-            ]
-        },
-        {
-            company_id: zeDelivery._id,
-            unit_id: itaquera._id,
-            service_id: servicesZD[2]._id,
-            collaborator_id: carlosTecnicoZD._id,
-            scheduled_date: d6,
-            current_status: 'AGENDADO',
-            zone: 'ZL',
-            address_override: 'Av. Itaquera, 5000 - Itaquera',
-            notes: 'Revisão do portão automático da garagem.',
-            timeline: [{ status: 'AGENDADO', timestamp: d6 }]
-        },
-        // Mais dados espalhados em 2026 para ZE DELIVERY
-        {
-            company_id: zeDelivery._id,
-            unit_id: VilaRe._id,
-            service_id: servicesZD[0]._id,
-            collaborator_id: carlosTecnicoZD._id,
-            scheduled_date: d7,
-            current_status: 'AGENDADO',
-            zone: 'ZL',
-            address_override: 'Rua Itinguçu, 1000 - Vila Ré',
-            notes: 'Revisão agendada.',
-            timeline: [{ status: 'AGENDADO', timestamp: d7 }]
-        },
-        {
-            company_id: zeDelivery._id,
             unit_id: pinheiros._id,
             service_id: servicesZD[1]._id,
             collaborator_id: carlosTecnicoZD._id,
@@ -495,21 +588,11 @@ async function seedDatabase() {
             current_status: 'AGENDADO',
             zone: 'ZO',
             address_override: 'Rua dos Pinheiros, 450 - Pinheiros',
-            notes: 'Vazamento crônico.',
+            notes: 'Vazamento crônico na copa.',
             timeline: [{ status: 'AGENDADO', timestamp: d8 }]
         },
-        {
-            company_id: zeDelivery._id,
-            unit_id: pinheiros._id,
-            service_id: servicesZD[2]._id,
-            collaborator_id: carlosTecnicoZD._id,
-            scheduled_date: d10,
-            current_status: 'AGENDADO',
-            zone: 'ZO',
-            address_override: 'Rua dos Pinheiros, 450 - Pinheiros',
-            notes: 'Portão quebrado.',
-            timeline: [{ status: 'AGENDADO', timestamp: d10 }]
-        },
+
+        // FLASH LTDA - Paulista & João Dias
         {
             company_id: flashLtda._id,
             unit_id: paulista._id,
@@ -546,8 +629,6 @@ async function seedDatabase() {
                 { status: 'CONCLUIDO', timestamp: d3 }
             ]
         },
-
-        // FLASH LTDA - João Dias
         {
             company_id: flashLtda._id,
             unit_id: joaoDias._id,
@@ -590,7 +671,7 @@ async function seedDatabase() {
             current_status: 'AGENDADO',
             zone: 'Centro',
             address_override: 'Avenida Paulista, 1000 - Bela Vista',
-            notes: 'Fechadura danificada.',
+            notes: 'Fechadura eletrônica travada.',
             timeline: [{ status: 'AGENDADO', timestamp: d11 }]
         },
         {
@@ -602,7 +683,7 @@ async function seedDatabase() {
             current_status: 'AGENDADO',
             zone: 'ZS',
             address_override: 'Estrada de Itapecerica, 500 - Vila Andrade',
-            notes: 'Ralo entupido.',
+            notes: 'Ralo entupido no sanitário dos funcionários.',
             timeline: [{ status: 'AGENDADO', timestamp: d12 }]
         },
 
@@ -638,145 +719,7 @@ async function seedDatabase() {
             ]
         }
     ]);
-
-    console.log('✅ Solicitações de serviço (Visitas) criadas com dados ricos para gráficos.');
-
-    // 7. CENTRAL DE AJUDA (HELP TOPICS SEEDER EXPORTÁVEL)
-    console.log('📚 Semeando Tópicos da Central de Ajuda...');
-    const helpSeedData = [
-      {
-        id: 'collaborators',
-        title: 'Colaboradores e Técnicos',
-        icon: 'people-outline',
-        order: 1,
-        topics: [
-          {
-            id: 'collaborator-main-info',
-            title: 'Dados Principais do Colaborador',
-            content: [
-              'O formulário de cadastro do colaborador solicita os dados essenciais de identificação do profissional de campo.',
-              'Nome Completo: Nome oficial do colaborador utilizado na emissão de Ordens de Serviço (OS) e relatórios técnicos.',
-              'E-mail: Endereço de e-mail exclusivo utilizado pelo colaborador para autenticação e login no aplicativo.',
-              'Telefone: Número de contato telefônico/WhatsApp para notificação automática sobre agendamentos e chamados.',
-              'Senha: Credencial de segurança inicial com no mínimo 6 caracteres.'
-            ]
-          },
-          {
-            id: 'collaborator-permissions',
-            title: 'Permissões e Cargos do Colaborador',
-            content: [
-              'Define o nível de autorização operacional e o escopo de atendimento do profissional.',
-              'Nível de Acesso / Cargo: Define a função (Técnico executa OS, Supervisor coordena equipes, Administrativo atua no suporte).',
-              'Empresa / Vínculo: Associa o colaborador a uma empresa parceira específica ou o mantém no Atendimento Geral (Global).',
-              'Especialidades: Seleção das áreas técnicas em que o profissional possui certificação (Elétrica, Hidráulica/Civil, Serralheria).',
-              'Colaborador Ativo: Permite bloquear ou liberar instantaneamente o acesso do colaborador ao aplicativo.'
-            ]
-          },
-          {
-            id: 'collaborator-teams',
-            title: 'Visão Geral de Equipes e Cargos',
-            content: [
-              'A tela de Equipes e Cargos agrega em tempo real a divisão da força de trabalho da empresa.',
-              'Equipe Técnica: Profissionais alocados como Técnicos de Campo.',
-              'Supervisores: Líderes operacionais com capacidade de vistoria e gestão.',
-              'Administrativo: Equipe interna de suporte, recepção e agendamento de chamados.'
-            ]
-          }
-        ]
-      },
-      {
-        id: 'services',
-        title: 'Catálogo de Serviços',
-        icon: 'construct-outline',
-        order: 5,
-        topics: [
-          {
-            id: 'service-data',
-            title: 'Dados e Precificação do Serviço',
-            content: [
-              'Informações essenciais de identificação e valor comercial do serviço prestado.',
-              'Nome do Serviço: Título exibido no aplicativo do cliente e nas Ordens de Serviço.',
-              'Descrição: Detalhes do escopo e atividades incluídas no atendimento.',
-              'Preço Base (R$): Valor inicial/padrão cobrado pela execução.',
-              'Categoria / Especialidade: Área técnica (Elétrica, Hidráulica/Civil, Serralheria, Geral), utilizada no filtro de alocação de técnicos.'
-            ]
-          },
-          {
-            id: 'service-appearance',
-            title: 'Aparência Visual e Disponibilidade',
-            content: [
-              'Configurações visuais e de agendamento do serviço.',
-              'Ícone no App: Representação gráfica do serviço nos cards do aplicativo e catálogo.',
-              'Serviço Ativo: Alterna a disponibilidade para novos agendamentos no sistema.'
-            ]
-          }
-        ]
-      },
-      {
-        id: 'staff',
-        title: 'Usuários Globais e Permissões',
-        icon: 'person-add-outline',
-        order: 2,
-        topics: [
-          {
-            id: 'staff-main-info',
-            title: 'Dados de Identidade do Usuário',
-            content: [
-              'Cadastro das informações primárias de qualquer perfil de acesso ao ecossistema Bravo.',
-              'Nome Completo: Nome do usuário responsável pela conta.',
-              'E-mail: E-mail de credencial para realizar login nos painéis administrativos ou cliente.',
-              'Telefone: Número de contato direto do usuário.'
-            ]
-          },
-          {
-            id: 'staff-permissions',
-            title: 'Credenciais, Níveis de Acesso e Módulos',
-            content: [
-              'Definição das chaves de segurança e escopo de navegação no painel.',
-              'Nível de Acesso: Define o papel do usuário no sistema (Super Admin, Dono de Empresa, Operador, Técnico de Campo, Cliente B2C).',
-              'Empresa Associada: Associa a conta ao tenant da empresa correspondente.',
-              'Módulos Liberados: Permissões granuladas de acesso aos menus (Empresas, Catálogo, Usuários, etc.).'
-            ]
-          }
-        ]
-      },
-      {
-        id: 'agenda-service-orders',
-        title: 'Agenda 365 e Status de OS',
-        icon: 'calendar-number-outline',
-        order: 3,
-        topics: [
-          {
-            id: 'agenda-visual-flow',
-            title: 'Navegação e Visualizações da Agenda 365',
-            content: [
-              'A Agenda 365 oferece controle operacional consolidado em tempo real das Ordens de Serviço (OS).',
-              'Visualização Mensal: Exibe a lista de chamados de cada dia com horário de início e status codificado em cores.',
-              'Visualização Semanal / Diária: Permite acompanhar a grade horária detalhada de cada serviço com técnico e unidade alocados.',
-              'Acesso Direto à OS: Ao clicar em qualquer evento do calendário, você é redirecionado instantaneamente para a tela de detalhes e ações da OS.'
-            ]
-          },
-          {
-            id: 'agenda-status-colors',
-            title: 'Guia de Cores e Status das Ordens de Serviço',
-            content: [
-              '🔵 Agendado (Azul): A Ordem de Serviço foi confirmada e agendada para a data e horário estipulados.',
-              '🟣 Técnico a Caminho (Roxo / Ciano): O técnico iniciou o deslocamento até a unidade de atendimento.',
-              '🟡 Técnico no Local / Em Execução (Amarelo / Âmbar): Check-in presencial realizado e serviço em execução.',
-              '🔵 Aguardando Assinatura (Azul Claro): Manutenção concluída, aguardando assinatura do responsável na unidade.',
-              '🟢 Concluído (Verde): Ordem de serviço finalizada e assinada com sucesso.',
-              '🔴 Cancelado / Recusado (Vermelho): Atendimento cancelado ou impedido por restrições técnicas.',
-              'Lembretes Automáticos: O sistema emite notificações preventivas (Push e E-mail) com registro em trilha de auditoria prévia da execução.'
-            ]
-          }
-        ]
-      }
-    ];
-
-    for (const catData of helpSeedData) {
-      await HelpCategory.create(catData);
-    }
-    console.log('✅ Central de Ajuda semeada com sucesso!');
+    console.log('✅ Ordens de Serviço semeadas.');
 }
 
 async function run() {
@@ -786,12 +729,12 @@ async function run() {
         console.log('✅ Conectado ao MongoDB.');
 
         await clearDatabase();
-        await seedDatabase();
+        await seedTestEnvironment();
 
-        console.log('🎉 Seed finalizado com sucesso!');
+        console.log('🎉 Sementeira de teste e desenvolvimento finalizada com sucesso!');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Erro durante o seed:', error);
+        console.error('❌ Erro durante o seed de teste:', error);
         process.exit(1);
     }
 }
