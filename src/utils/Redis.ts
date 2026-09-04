@@ -21,10 +21,14 @@ const clientConfig: any = redisEnv?.url ? { url: redisEnv.url } : {
 
 const client = createClient(clientConfig);
 
+// Tratador global de erro para evitar que ECONNRESET derrube o processo Node.js
+client.on('error', (err) => {
+    console.warn('⚠️ [REDIS CLIENT WARNING]:', err.message || err);
+});
+
 export class Redis {
 
     static connectToRedis() {
-        // this.client.on('error', (err) => console.log('Redis Client Error', err));
         client.connect().then(() => {
             console.log('✅ [REDIS]: Conectado com sucesso.');
         })
