@@ -7,14 +7,16 @@
         "start-dev": "nodemon --exec ts-node --files src/index.ts",
         "start-staging": "cross-env NODE_ENV=staging nodemon --exec ts-node --files src/index.ts",
         "start-prod": "cross-env NODE_ENV=production npm start",
-        "build": "tsc",
+        "heroku-postbuild": "npm run build",
+        "build": "tsc && npm run sanity-check",
+        "sanity-check": "ts-node src/scripts/sanityCheck.ts",
         "start": "node dist/index.js",
-        "db:clear": "ts-node src/scripts/clearAllDatabases.ts",
-        "db:init": "ts-node src/scripts/InitialBravoDb.ts",
-        "db:seed": "ts-node src/scripts/InitialBravoDb.ts",
-        "seed": "ts-node src/scripts/InitialBravoDb.ts",
-        "seed:help": "ts-node src/scripts/seedHelpScript.ts",
-        "export:help": "ts-node src/scripts/exportHelpScript.ts",
+        "db:clear": "ts-node --files src/scripts/clearAllDatabases.ts",
+        "db:init": "ts-node --files src/scripts/InitialBravoDb.ts",
+        "db:seed": "ts-node --files src/scripts/InitialBravoDb.ts",
+        "seed": "ts-node --files src/scripts/InitialBravoDb.ts",
+        "seed:help": "ts-node --files src/scripts/seedHelpScript.ts",
+        "export:help": "ts-node --files src/scripts/exportHelpScript.ts",
         "test": "echo \"No tests specified\" && exit 0",
         "cleanup": "ts-node cleanup.ts && git fetch --prune",
         "test:push": "ts-node src/scripts/testPush.ts",
@@ -42,7 +44,9 @@
         "nodemailer": "^9.0.3",
         "nodemailer-sendgrid-transport": "^0.2.0",
         "redis": "^6.1.0",
-        "stripe": "^22.3.2"
+        "stripe": "^22.3.2",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.5.3"
     },
     "devDependencies": {
         "@types/bcrypt": "^6.0.0",
@@ -52,8 +56,6 @@
         "@types/multer": "^2.2.0",
         "@types/node": "^20.14.10",
         "@types/nodemailer": "^8.0.1",
-        "nodemon": "^3.1.4",
-        "ts-node": "^10.9.2",
-        "typescript": "^5.5.3"
+        "nodemon": "^3.1.4"
     }
 }
