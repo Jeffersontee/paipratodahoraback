@@ -1,0 +1,54 @@
+[
+  {
+    "id": "collaborators",
+    "title": "Colaboradores e Técnicos",
+    "icon": "people-outline",
+    "order": 1,
+    "topics": [
+      {
+        "id": "collaborator-main-info",
+        "title": "Dados Principais do Colaborador",
+        "content": [
+          "O formulário de cadastro do colaborador solicita os dados essenciais de identificação do profissional de campo.",
+          "Nome Completo: Nome oficial do colaborador utilizado na emissão de Ordens de Serviço (OS) e relatórios técnicos.",
+          "E-mail: Endereço de e-mail exclusivo utilizado pelo colaborador para autenticação e login no aplicativo.",
+          "Telefone: Número de contato telefônico/WhatsApp para notificação automática sobre agendamentos e chamados."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "services",
+    "title": "Catálogo de Serviços",
+    "icon": "construct-outline",
+    "order": 2,
+    "topics": [
+      {
+        "id": "service-data",
+        "title": "Dados e Precificação do Serviço",
+        "content": [
+          "Informações essenciais de identificação e valor comercial do serviço prestado.",
+          "Nome do Serviço: Título exibido no aplicativo do cliente e nas Ordens de Serviço.",
+          "Descrição: Detalhes do escopo e atividades incluídas no atendimento."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "billing",
+    "title": "Faturamento e Assinaturas SaaS",
+    "icon": "cash-outline",
+    "order": 3,
+    "topics": [
+      {
+        "id": "billing-invoices",
+        "title": "Minhas Faturas e Pagamento PIX",
+        "content": [
+          "Acesse a tela Minhas Faturas para visualizar as cobranças mensais do plano contratado.",
+          "O sistema gera automaticamente as faturas preventivas com antecedência ao vencimento.",
+          "Você pode gerar o código PIX instantaneamente para quitação direta no seu banco."
+        ]
+      }
+    ]
+  }
+]
