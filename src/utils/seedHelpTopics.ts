@@ -95,14 +95,16 @@ export const DEFAULT_BRAVO_HELP_SECTIONS: IHelpCategoryData[] = [
         topics: [
             {
                 id: 'service-order-flow',
-                title: 'Fluxo Operacional de Atendimento (Status)',
+                title: 'Guia de Cores e Status Operacionais',
                 content: [
-                    'As Ordens de Serviço passam por etapas padronizadas:',
-                    '1. SOLICITADO: Chamado aberto aguardando triagem ou data sugerida.',
-                    '2. AGENDADO: Técnico designado com data e horário definidos.',
-                    '3. EM DESLOCAMENTO: Técnico a caminho do local de atendimento.',
-                    '4. CHECK-IN / EM EXECUÇÃO: Atendimento iniciado no local da filial.',
-                    '5. RELATÓRIO / CONCLUÍDO: Laudo emitido com fotos e assinaturas digitais.'
+                    'As Ordens de Serviço utilizam o mesmo padrão de cores e status em toda a plataforma:',
+                    '<span class="status-pill status-secondary">SOLICITADO</span>: Chamado aberto pelo solicitante aguardando triagem ou confirmação de agenda.',
+                    '<span class="status-pill status-primary">AGENDADO</span>: Serviço confirmado com técnico designado na data e horário marcados.',
+                    '<span class="status-pill status-tertiary">TÉCNICO A CAMINHO</span>: Deslocamento iniciado pelo técnico até a filial indicada.',
+                    '<span class="status-pill status-warning">EM EXECUÇÃO</span>: Check-in presencial realizado e serviço técnico em andamento.',
+                    '<span class="status-pill status-secondary">AGUARDANDO ASSINATURA</span>: Relatório técnico pronto aguardando validação do responsável.',
+                    '<span class="status-pill status-success">CONCLUÍDO</span>: Atendimento finalizado e aprovado com sucesso.',
+                    '<span class="status-pill status-danger">CANCELADO / RECUSADO</span>: Chamado recusado ou cancelado por impedimento.'
                 ]
             },
             {
