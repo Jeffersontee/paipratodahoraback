@@ -73,34 +73,36 @@ export class CollaboratorController {
             const adminUser = await User.findById(req.user?.aud || req.user?.user_id || req.user?._id);
             const userCompanyId = adminUser?.company_id || null;
 
-            const filter: any = {};
             const queryCompanyId = req.query.company_id as string | undefined;
-            const targetCompanyId = adminUser?.type === 'super_admin' ? (queryCompanyId || userCompanyId) : (userCompanyId || queryCompanyId);
+            const targetCompanyId = adminUser?.type === 'super_admin' ? (queryCompanyId || null) : userCompanyId;
+
+            // Filtro estrito: Apenas técnicos de campo ou colaboradores com função técnica/supervisão operacional
+            const filter: any = {
+                status: 'active',
+                type: { $ne: 'user' }, // Clientes finais nunca aparecem como técnicos
+                $or: [
+                    { type: 'collaborator' },
+                    { role: { $in: ['technician', 'técnico', 'supervisor'] } }
+                ]
+            };
 
             if (targetCompanyId) {
-                // Traz todos os membros/usuários vinculados à empresa solicitada + Técnicos Globais (sem vínculo fixo)
-                filter.$or = [
-                    { company_id: targetCompanyId },
-                    { company_id: null, role: { $in: ['technician', 'técnico', 'collaborator', 'supervisor'] } },
-                    { company_id: { $exists: false }, role: { $in: ['technician', 'técnico', 'collaborator', 'supervisor'] } }
+                // Se filtrado por empresa: técnicos da empresa + técnicos gerais/globais
+                filter.$and = [
+                    {
+                        $or: [
+                            { company_id: targetCompanyId },
+                            { company_id: null },
+                            { company_id: { $exists: false } }
+                        ]
+                    }
                 ];
-                filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff', 'user'] };
-            } else {
-                if (adminUser?.type === 'super_admin') {
-                    filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff', 'user'] };
-                } else {
-                    filter.$or = [
-                        { company_id: userCompanyId },
-                        { company_id: null, role: { $in: ['technician', 'técnico', 'collaborator', 'supervisor'] } },
-                        { company_id: { $exists: false }, role: { $in: ['technician', 'técnico', 'collaborator', 'supervisor'] } }
-                    ];
-                    filter.type = { $in: ['collaborator', 'admin', 'company_owner', 'super_staff', 'user'] };
-                }
             }
 
             const collaborators = await User.find(filter)
                 .populate('company_id', 'name')
-                .select('-password -__v');
+                .select('-password -__v')
+                .sort({ name: 1 });
             
             res.status(200).json({
                 success: true,
