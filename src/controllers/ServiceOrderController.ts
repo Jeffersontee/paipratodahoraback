@@ -9,6 +9,15 @@ import { AuditService } from '../services/AuditService';
 import { NotificationService } from '../services/NotificationService';
 import { GeoUtils } from '../utils/GeoUtils';
 
+export const DEFAULT_SERVICE_ORDER_POPULATE = [
+    { path: 'company_id', select: 'name short_name logo_url' },
+    { path: 'unit_id', select: 'name address' },
+    { path: 'address_id' },
+    { path: 'service_id' },
+    { path: 'collaborator_id', select: 'name phone avatar_url' },
+    { path: 'user_id', select: 'name email phone avatar_url' }
+];
+
 export class ServiceOrderController {
     static async list(req: Request, res: Response, next: NextFunction) {
         try {
@@ -72,12 +81,7 @@ export class ServiceOrderController {
             }
 
             const orders = await ServiceOrder.find(filter)
-                .populate('company_id', 'name short_name')
-                .populate('unit_id', 'name address')
-                .populate('address_id')
-                .populate('service_id', 'name category icon price description')
-                .populate('collaborator_id', 'name phone')
-                .populate('user_id', 'name email phone')
+                .populate(DEFAULT_SERVICE_ORDER_POPULATE)
                 .sort({ createdAt: -1 });
 
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(orders, (req as any).user?.type);
@@ -101,10 +105,10 @@ export class ServiceOrderController {
             
             const authUser = (req as any).user;
             
-            // Se o usuário possuir empresa/unidade vinculada ou passar no body, associa; caso contrário associa à Matriz Bravo
+            // Se for cliente final (user), não deve associar a uma empresa PJ aleatória
             let finalCompanyId = company_id || authUser?.company_id || null;
-            if (!finalCompanyId) {
-                const matrizCompany = await Company.findOne({ is_headquarters: true }) || await Company.findOne({ active: true });
+            if (!finalCompanyId && authUser?.type !== 'user') {
+                const matrizCompany = await Company.findOne({ is_headquarters: true });
                 if (matrizCompany) finalCompanyId = matrizCompany._id;
             }
             const finalUnitId = unit_id || authUser?.unit_id || null;
@@ -155,13 +159,7 @@ export class ServiceOrderController {
 
             await order.save();
             NotificationService.sendServiceOrderPush(order._id.toString(), order.current_status);
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'address_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
             return res.status(201).json({
                 success: true,
@@ -175,11 +173,7 @@ export class ServiceOrderController {
     static async get(req: Request, res: Response, next: NextFunction) {
         try {
             const order = await ServiceOrder.findById(req.params.id)
-                .populate('company_id')
-                .populate('unit_id')
-                .populate('address_id')
-                .populate('service_id')
-                .populate('collaborator_id');
+                .populate(DEFAULT_SERVICE_ORDER_POPULATE);
 
             if (!order) {
                 req.errorStatus = 404;
@@ -255,13 +249,7 @@ export class ServiceOrderController {
                 }
             });
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'address_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -314,12 +302,7 @@ export class ServiceOrderController {
                 }
             });
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -400,12 +383,7 @@ export class ServiceOrderController {
                 }
             });
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -441,12 +419,7 @@ export class ServiceOrderController {
             await order.save();
             NotificationService.sendServiceOrderPush(order._id.toString(), 'AGENDADO');
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -480,12 +453,7 @@ export class ServiceOrderController {
             await order.save();
             NotificationService.sendServiceOrderPush(order._id.toString(), 'SOLICITADO');
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -516,12 +484,7 @@ export class ServiceOrderController {
             await order.save();
             NotificationService.sendServiceOrderPush(order._id.toString(), 'CANCELADO');
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -554,12 +517,7 @@ export class ServiceOrderController {
             await order.save();
             NotificationService.sendServiceOrderPush(order._id.toString(), 'TRANSIT_ISSUE', reason);
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -591,12 +549,7 @@ export class ServiceOrderController {
             await order.save();
             NotificationService.sendServiceOrderPush(order._id.toString(), 'EM_DESLOCAMENTO');
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -629,12 +582,7 @@ export class ServiceOrderController {
             await order.save();
             NotificationService.sendServiceOrderPush(order._id.toString(), 'EXECUTION_IMPEDIMENT', reason);
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -665,12 +613,7 @@ export class ServiceOrderController {
 
             await order.save();
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -708,12 +651,7 @@ export class ServiceOrderController {
             await order.save();
             NotificationService.sendServiceOrderPush(order._id.toString(), 'RELATORIO_CHECKOUT');
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
@@ -759,12 +697,7 @@ export class ServiceOrderController {
                 await rating.save();
             }
 
-            const populated = await order.populate([
-                { path: 'company_id' },
-                { path: 'unit_id' },
-                { path: 'service_id' },
-                { path: 'collaborator_id' }
-            ]);
+            const populated = await order.populate(DEFAULT_SERVICE_ORDER_POPULATE);
             const sanitized = ServiceOrderController.sanitizeServiceOrdersForUser(populated, (req as any).user?.type);
 
             return res.status(200).json({
