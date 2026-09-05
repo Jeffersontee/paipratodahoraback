@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ServiceOrderController } from '../controllers/ServiceOrderController';
 import { ServiceOrderValidator } from '../validators/ServiceOrderValidator';
+import { AuthMiddleware } from '../middlewares/global/auth.middleware';
 
 class ServiceOrderRouter {
     public router: Router;
@@ -11,6 +12,9 @@ class ServiceOrderRouter {
     }
 
     setRoutes() {
+        // Todas as rotas de Ordens de Serviço exigem usuário autenticado
+        this.router.use(AuthMiddleware.authenticate);
+
         this.router.get('/', ServiceOrderController.list);
         this.router.post('/', ServiceOrderValidator.create(), ServiceOrderController.create);
         this.router.get('/:id', ServiceOrderController.get);

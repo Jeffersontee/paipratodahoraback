@@ -95,8 +95,10 @@ export class ServiceOrderController {
                 gut_gravity, gut_urgency, gut_trend 
             } = req.body;
             
-            let finalCompanyId = company_id;
-            let finalUnitId = unit_id;
+            const authUser = (req as any).user;
+            
+            let finalCompanyId = company_id || authUser?.company_id;
+            let finalUnitId = unit_id || authUser?.unit_id;
 
             if (!finalCompanyId) {
                 const firstCompany = await Company.findOne({ active: true });
@@ -108,7 +110,6 @@ export class ServiceOrderController {
                 if (firstUnit) finalUnitId = firstUnit._id;
             }
 
-            const authUser = (req as any).user;
             const userId = req.body.user_id || authUser?._id;
 
             const cleanCollaboratorId =
