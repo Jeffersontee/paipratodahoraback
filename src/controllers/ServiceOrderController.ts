@@ -97,20 +97,10 @@ export class ServiceOrderController {
             
             const authUser = (req as any).user;
             
-            let finalCompanyId = company_id || authUser?.company_id;
-            let finalUnitId = unit_id || authUser?.unit_id;
-
-            if (!finalCompanyId) {
-                const firstCompany = await Company.findOne({ active: true });
-                if (firstCompany) finalCompanyId = firstCompany._id;
-            }
-
-            if (!finalUnitId && finalCompanyId) {
-                const firstUnit = await Unit.findOne({ company_id: finalCompanyId });
-                if (firstUnit) finalUnitId = firstUnit._id;
-            }
-
-            const userId = req.body.user_id || authUser?._id;
+            // Se o usuário possuir empresa/unidade vinculada ou passar no body, associa; caso contrário mantém null (OS Avulsa / Matriz)
+            const finalCompanyId = company_id || authUser?.company_id || null;
+            const finalUnitId = unit_id || authUser?.unit_id || null;
+            const userId = req.body.user_id || authUser?._id || null;
 
             const cleanCollaboratorId =
                 collaborator_id === '' || collaborator_id === 'null' || collaborator_id === null

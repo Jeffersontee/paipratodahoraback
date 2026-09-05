@@ -47,11 +47,22 @@ const UserSchema = new Schema<IUserDocument>(
     verification_token_time: { type: Schema.Types.Mixed, required: false },
     cpf: { type: String, required: false },
     email_verified: { type: Boolean, required: false, default: false },
-    photo: { type: String, required: false },
+    photo: { type: String, required: false, default: null },
     reset_password_token: { type: String, required: false },
     reset_password_token_time: { type: Schema.Types.Mixed, required: false },
     company_id: { type: Schema.Types.ObjectId, ref: 'Company', required: false, default: null },
-    role: { type: String, required: false },
+    role: { 
+      type: String, 
+      required: false, 
+      default: function(this: IUserDocument) {
+        if (this.type === 'collaborator') return 'technician';
+        if (this.type === 'company_owner') return 'owner';
+        if (this.type === 'super_admin') return 'super_admin';
+        if (this.type === 'super_staff') return 'hq_supervisor';
+        if (this.type === 'staff') return 'store_operator';
+        return 'customer';
+      }
+    },
     permissions: [{ type: String }],
     technician_profile: {
       specialties: [{ type: String }],

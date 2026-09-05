@@ -8,8 +8,8 @@ export interface ITimelineEvent {
 }
 
 export interface IServiceOrder {
-    company_id: Types.ObjectId;
-    unit_id: Types.ObjectId;
+    company_id?: Types.ObjectId;
+    unit_id?: Types.ObjectId;
     service_id: Types.ObjectId;
     collaborator_id?: Types.ObjectId;
     user_id?: Types.ObjectId;
@@ -91,11 +91,11 @@ const TimelineEventSchema = new Schema<ITimelineEvent>({
 
 const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
     {
-        company_id: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
-        unit_id: { type: Schema.Types.ObjectId, ref: 'Unit', required: true },
+        company_id: { type: Schema.Types.ObjectId, ref: 'Company', required: false, default: null },
+        unit_id: { type: Schema.Types.ObjectId, ref: 'Unit', required: false, default: null },
         service_id: { type: Schema.Types.ObjectId, ref: 'Service', required: true },
-        collaborator_id: { type: Schema.Types.ObjectId, ref: 'User', required: false },
-        user_id: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+        collaborator_id: { type: Schema.Types.ObjectId, ref: 'User', required: false, default: null },
+        user_id: { type: Schema.Types.ObjectId, ref: 'User', required: false, default: null },
         scheduled_date: { type: Date },
         
         current_status: { 
