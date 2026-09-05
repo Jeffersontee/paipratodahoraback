@@ -1230,7 +1230,7 @@ export class UserController {
                 email: normalizedEmail,
                 phone: phone ? String(phone).replace(/\D/g, '') : null,
                 type: targetType,
-                role: role || (targetType === 'super_admin' ? 'root' : targetType === 'company_owner' ? 'owner' : undefined),
+                role: role || undefined,
                 password: hash,
                 company_id: targetCompanyId,
                 status: status || 'active',
