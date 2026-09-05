@@ -26,11 +26,24 @@ client.on('error', (err) => {
     console.warn('⚠️ [REDIS CLIENT WARNING]:', err.message || err);
 });
 
+// Helper para isolamento de chaves entre múltiplos projetos e ambientes (Multi-tenant / Namespacing)
+const getRedisPrefix = (): string => {
+    const env = process.env.NODE_ENV || 'development';
+    if (env === 'production') return 'bravo:prod:';
+    if (env === 'staging') return 'bravo:staging:';
+    return 'bravo:dev:';
+};
+
 export class Redis {
+
+    private static formatKey(key: string): string {
+        const prefix = getRedisPrefix();
+        return key.startsWith(prefix) ? key : `${prefix}${key}`;
+    }
 
     static connectToRedis() {
         client.connect().then(() => {
-            console.log('✅ [REDIS]: Conectado com sucesso.');
+            console.log(`✅ [REDIS]: Conectado com sucesso. Prefixo ativo: [${getRedisPrefix()}]`);
         })
         .catch(e => {
             console.error('❌ [REDIS ERROR]: Falha crítica na conexão:', e.message);
@@ -40,6 +53,7 @@ export class Redis {
 
     static async setValue(key: string, value: string, expires_at?: number) {
         try {
+            const formattedKey = this.formatKey(key);
             let options: any = {};
             if(expires_at) {
                 options = {
@@ -49,7 +63,7 @@ export class Redis {
             if (!client.isOpen) {
                 await client.connect();
             }
-            await client.set(key, value, options);
+            await client.set(formattedKey, value, options);
             return;
         } catch(e) {
             console.error('❌ [REDIS SET ERROR]:', e);
@@ -59,11 +73,12 @@ export class Redis {
 
     static async getValue(key: string) {
         try {
+            const formattedKey = this.formatKey(key);
             if (!client.isOpen) {
                 console.warn('⚠️ [REDIS]: Tentando reconectar...');
                 await client.connect();
             }
-            const value = await client.get(key);
+            const value = await client.get(formattedKey);
             return value;
         } catch(e) {
             console.error('❌ [REDIS GET ERROR]:', e);
@@ -74,10 +89,11 @@ export class Redis {
 
     static async deleteKey(key: string) {
         try {
+            const formattedKey = this.formatKey(key);
             if (!client.isOpen) {
                 await client.connect();
             }
-            await client.del(key);
+            await client.del(formattedKey);
         } catch(e) {
             console.error('❌ [REDIS DELETE ERROR]:', e);
             throw new Error('Erro ao encerrar sessão no servidor.');
