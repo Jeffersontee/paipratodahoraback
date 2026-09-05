@@ -11,7 +11,6 @@ export interface ICompany {
     subscription_status?: 'trial' | 'active' | 'inactive' | 'canceled'; // Tipagem estrita
     next_payment_date?: Date;
     subscription_id?: any;
-    plan_id?: any;
     catalog_module_enabled?: boolean;
     services?: any[];
     createdAt?: Date;

@@ -51,31 +51,22 @@ async function seedTestEnvironment() {
     const zeDelivery = await Company.create({
         name: 'Zé Delivery',
         cnpj: '12.345.678/0001-99',
-        status: 'ACTIVE',
-        subscription_status: 'active',
-        plan_id: planPro._id,
-        plan_name: planPro.name,
-        monthly_revenue: 199
+        active: true,
+        subscription_status: 'active'
     });
 
     const flashLtda = await Company.create({
         name: 'Flash Ltda',
         cnpj: '00.000.000/0000-50',
-        status: 'ACTIVE',
-        subscription_status: 'active',
-        plan_id: planPremium._id,
-        plan_name: planPremium.name,
-        monthly_revenue: 349
+        active: true,
+        subscription_status: 'active'
     });
 
     const ambev = await Company.create({
         name: 'Ambev Distribuidora',
         cnpj: '99.999.999/0001-22',
-        status: 'ACTIVE',
-        subscription_status: 'trialing',
-        plan_id: planTrial._id,
-        plan_name: planTrial.name,
-        monthly_revenue: 0
+        active: true,
+        subscription_status: 'trial'
     });
     console.log('✅ Empresas criadas.');
 
@@ -98,6 +89,8 @@ async function seedTestEnvironment() {
         monthly_revenue: planPremium.price,
         total_revenue: planPremium.price * 9
     });
+    flashLtda.subscription_id = subFlash._id;
+    await flashLtda.save();
 
     const subZD = await Subscription.create({
         company_id: zeDelivery._id,
@@ -111,6 +104,8 @@ async function seedTestEnvironment() {
         monthly_revenue: planPro.price,
         total_revenue: planPro.price * 8
     });
+    zeDelivery.subscription_id = subZD._id;
+    await zeDelivery.save();
 
     const subAmbev = await Subscription.create({
         company_id: ambev._id,
@@ -124,6 +119,8 @@ async function seedTestEnvironment() {
         monthly_revenue: 0,
         total_revenue: 0
     });
+    ambev.subscription_id = subAmbev._id;
+    await ambev.save();
     console.log('✅ Assinaturas SaaS criadas.');
 
     // 4. HISTÓRICO DE FATURAS MENSAIS (INVOICES - PARA GRÁFICOS E COBRANÇA)

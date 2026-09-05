@@ -17,7 +17,6 @@ const CompanySchema = new Schema<ICompanyDocument>(
         subscription_status: { type: String, default: 'active' },
         next_payment_date: { type: Date, required: false },
         subscription_id: { type: Schema.Types.ObjectId, ref: 'subscriptions', required: false },
-        plan_id: { type: Schema.Types.ObjectId, ref: 'plans', required: false },
         catalog_module_enabled: { type: Boolean, default: true },
         services: [{ type: Schema.Types.ObjectId, ref: 'Service', default: [] }]
     },

@@ -9,7 +9,9 @@ import { ICompanyCreateInput } from '../interfaces/company.interface';
 export class CompanyController {
     static async list(req: Request, res: Response, next: NextFunction) {
         try {
-            const companies = await Company.find().sort({ createdAt: -1 });
+            const companies = await Company.find()
+                .populate({ path: 'subscription_id', populate: { path: 'plan_id' } })
+                .sort({ createdAt: -1 });
 
             // Enriquecer cada empresa com os dados do responsável/dono caso estejam em branco
             const enrichedCompanies = await Promise.all(
@@ -38,7 +40,7 @@ export class CompanyController {
 
     static async create(req: Request, res: Response, next: NextFunction) {
         try {
-            const body: ICompanyCreateInput & { password?: string; phone?: string } = req.body;
+            const body: ICompanyCreateInput & { password?: string; phone?: string; plan_id?: string } = req.body;
             const existingCompany = await Company.findOne({ cnpj: body.cnpj });
             if (existingCompany) {
                 return res.status(422).json({ success: false, message: 'Já existe uma empresa cadastrada com este CNPJ.' });
@@ -92,7 +94,6 @@ export class CompanyController {
             company.next_payment_date = endDate;
             company.subscription_status = 'trial';
             company.subscription_id = subscription._id;
-            if (body.plan_id) company.plan_id = body.plan_id as any;
             if (body.catalog_module_enabled !== undefined) company.catalog_module_enabled = body.catalog_module_enabled;
             await company.save();
 
@@ -107,7 +108,8 @@ export class CompanyController {
 
     static async get(req: Request, res: Response, next: NextFunction) {
         try {
-            const company = await Company.findById(req.params.id);
+            const company = await Company.findById(req.params.id)
+                .populate({ path: 'subscription_id', populate: { path: 'plan_id' } });
             if (!company) {
                 return res.status(404).json({ success: false, message: 'Empresa não encontrada.' });
             }
@@ -136,12 +138,17 @@ export class CompanyController {
             const { name, owner_name, short_name, description, cnpj, email, phone, active, services, plan_id, catalog_module_enabled } = req.body;
             const company = await Company.findByIdAndUpdate(
                 req.params.id,
-                { name, owner_name, short_name, description, cnpj, email, phone, active, services, plan_id, catalog_module_enabled },
+                { name, owner_name, short_name, description, cnpj, email, phone, active, services, catalog_module_enabled },
                 { new: true, runValidators: true }
             );
 
             if (!company) {
                 return res.status(404).json({ success: false, message: 'Empresa não encontrada.' });
+            }
+
+            // Sincroniza o plano na assinatura correspondente caso tenha sido fornecido
+            if (plan_id && company.subscription_id) {
+                await Subscription.findByIdAndUpdate(company.subscription_id, { plan_id });
             }
 
             // Sincroniza os dados do responsável na conta do usuário Dono da Empresa caso exista

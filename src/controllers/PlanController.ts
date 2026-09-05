@@ -142,12 +142,11 @@ export class PlanController {
         try {
             const planId = req.params.id;
 
-            // Validação de Segurança: Não permite deletar se houver estabelecimentos vinculados
-            // CORREÇÃO CRÍTICA: Bloqueia a remoção se houver contratos vigentes atados à este plano
-            const hasLinkedSubscriptions = await Company.exists({ plan_id: planId });
+            // Validação de Segurança: Bloqueia a remoção se houver assinaturas vinculadas a este plano
+            const hasLinkedSubscriptions = await Subscription.exists({ plan_id: planId });
             if (hasLinkedSubscriptions) {
                 req.errorStatus = 400;
-                throw new Error('Não é possível excluir um plano que possui estabelecimentos vinculados.');
+                throw new Error('Não é possível excluir um plano que possui estabelecimentos com assinaturas vinculadas.');
             }
 
             await Plan.findByIdAndDelete(planId);
