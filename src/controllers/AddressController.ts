@@ -57,12 +57,8 @@ export class AddressController {
                 unit_id
             } = req.body;
 
-            if (!lat || !lng) {
-                return res.status(422).json({
-                    success: false,
-                    message: 'Coordenadas de latitude e longitude são obrigatórias.'
-                });
-            }
+            const parsedLat = (lat !== undefined && lat !== null && !isNaN(Number(lat)) && Number(lat) !== 0) ? Number(lat) : -23.55052;
+            const parsedLng = (lng !== undefined && lng !== null && !isNaN(Number(lng)) && Number(lng) !== 0) ? Number(lng) : -46.633308;
 
             const formattedAddress = address || [street, number, neighborhood, city, state].filter(Boolean).join(', ');
 
@@ -92,8 +88,8 @@ export class AddressController {
                 address: formattedAddress,
                 house: house || number || '',
                 landmark: landmark || '',
-                lat: Number(lat),
-                lng: Number(lng),
+                lat: parsedLat,
+                lng: parsedLng,
                 is_default: shouldBeDefault
             });
 
