@@ -13,6 +13,9 @@ export interface ICompany {
     subscription_id?: any;
     catalog_module_enabled?: boolean;
     services?: any[];
+    is_headquarters?: boolean;
+    address_id?: any;
+    service_radius_km?: number;
     createdAt?: Date;
     updatedAt?: Date;
 }

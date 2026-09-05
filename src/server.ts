@@ -24,6 +24,7 @@ import AppearanceRouter from './routers/AppearanceRouter';
 import PlanRouter from './routers/PlanRouter';
 import SubscriptionRouter from './routers/SubscriptionRouter';
 import InvoiceRouter from './routers/InvoiceRouter';
+import AddressRouter from './routers/AddressRouter';
 
 export class Server {
     public app: express.Application = express();
@@ -208,6 +209,7 @@ export class Server {
         this.app.use('/api/plans', PlanRouter);
         this.app.use('/api/subscriptions', SubscriptionRouter);
         this.app.use('/api/invoices', InvoiceRouter);
+        this.app.use('/api/addresses', AddressRouter);
     }
 
     error404Handler() {

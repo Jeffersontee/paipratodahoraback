@@ -10,6 +10,7 @@ export interface ITimelineEvent {
 export interface IServiceOrder {
     company_id?: Types.ObjectId;
     unit_id?: Types.ObjectId;
+    address_id?: Types.ObjectId;
     service_id: Types.ObjectId;
     collaborator_id?: Types.ObjectId;
     user_id?: Types.ObjectId;
@@ -31,6 +32,8 @@ export interface IServiceOrder {
     fuel_cost?: string;
     zone?: string;
     address_override?: string;
+    estimated_distance_km?: number;
+    estimated_duration_min?: number;
     observations?: string;
     checkout_time?: Date;
 
@@ -93,6 +96,7 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
     {
         company_id: { type: Schema.Types.ObjectId, ref: 'Company', required: false, default: null },
         unit_id: { type: Schema.Types.ObjectId, ref: 'Unit', required: false, default: null },
+        address_id: { type: Schema.Types.ObjectId, ref: 'Address', required: false, default: null },
         service_id: { type: Schema.Types.ObjectId, ref: 'Service', required: true },
         collaborator_id: { type: Schema.Types.ObjectId, ref: 'User', required: false, default: null },
         user_id: { type: Schema.Types.ObjectId, ref: 'User', required: false, default: null },
@@ -122,6 +126,8 @@ const ServiceOrderSchema = new Schema<IServiceOrderDocument>(
         fuel_cost: { type: String },
         zone: { type: String },
         address_override: { type: String },
+        estimated_distance_km: { type: Number },
+        estimated_duration_min: { type: Number },
         observations: { type: String },
 
         // Mapeamento no banco

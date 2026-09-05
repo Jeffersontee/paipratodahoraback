@@ -3,9 +3,11 @@ import mongoose, { Types } from 'mongoose';
 import ServiceOrder from '../models/serviceorder.model';
 import Company from '../models/company.model';
 import Unit from '../models/unit.model';
+import Address from '../models/address.model';
 import Rating from '../models/rating.model';
 import { AuditService } from '../services/AuditService';
 import { NotificationService } from '../services/NotificationService';
+import { GeoUtils } from '../utils/GeoUtils';
 
 export class ServiceOrderController {
     static async list(req: Request, res: Response, next: NextFunction) {
@@ -72,6 +74,7 @@ export class ServiceOrderController {
             const orders = await ServiceOrder.find(filter)
                 .populate('company_id', 'name short_name')
                 .populate('unit_id', 'name address')
+                .populate('address_id')
                 .populate('service_id', 'name category icon price description')
                 .populate('collaborator_id', 'name phone')
                 .populate('user_id', 'name email phone')
@@ -92,13 +95,18 @@ export class ServiceOrderController {
         try {
             const { 
                 company_id, unit_id, service_id, collaborator_id, scheduled_date, notes,
-                gut_gravity, gut_urgency, gut_trend 
+                gut_gravity, gut_urgency, gut_trend,
+                address_id 
             } = req.body;
             
             const authUser = (req as any).user;
             
-            // Se o usuário possuir empresa/unidade vinculada ou passar no body, associa; caso contrário mantém null (OS Avulsa / Matriz)
-            const finalCompanyId = company_id || authUser?.company_id || null;
+            // Se o usuário possuir empresa/unidade vinculada ou passar no body, associa; caso contrário associa à Matriz Bravo
+            let finalCompanyId = company_id || authUser?.company_id || null;
+            if (!finalCompanyId) {
+                const matrizCompany = await Company.findOne({ is_headquarters: true }) || await Company.findOne({ active: true });
+                if (matrizCompany) finalCompanyId = matrizCompany._id;
+            }
             const finalUnitId = unit_id || authUser?.unit_id || null;
             const userId = req.body.user_id || authUser?._id || null;
 
@@ -125,6 +133,7 @@ export class ServiceOrderController {
             const order = new ServiceOrder({
                 company_id: finalCompanyId,
                 unit_id: finalUnitId,
+                address_id: address_id || null,
                 service_id,
                 collaborator_id: cleanCollaboratorId,
                 user_id: userId,
@@ -149,6 +158,7 @@ export class ServiceOrderController {
             const populated = await order.populate([
                 { path: 'company_id' },
                 { path: 'unit_id' },
+                { path: 'address_id' },
                 { path: 'service_id' },
                 { path: 'collaborator_id' }
             ]);
@@ -167,6 +177,7 @@ export class ServiceOrderController {
             const order = await ServiceOrder.findById(req.params.id)
                 .populate('company_id')
                 .populate('unit_id')
+                .populate('address_id')
                 .populate('service_id')
                 .populate('collaborator_id');
 
@@ -211,6 +222,18 @@ export class ServiceOrderController {
                 notes
             });
 
+            if (status === 'EM_DESLOCAMENTO' && location?.lat && location?.lng) {
+                // Se a OS tiver endereço de destino, calcula distância e tempo estimado
+                if (order.address_id) {
+                    const customerAddress = await Address.findById(order.address_id);
+                    if (customerAddress?.lat && customerAddress?.lng) {
+                        const distKm = GeoUtils.calculateDistanceKm(location.lat, location.lng, customerAddress.lat, customerAddress.lng);
+                        order.estimated_distance_km = distKm;
+                        order.estimated_duration_min = GeoUtils.estimateDurationMinutes(distKm);
+                    }
+                }
+            }
+
             if (status === 'CHECK_IN') {
                 order.checkin_time = new Date();
                 order.checkin_location = location;
@@ -235,6 +258,7 @@ export class ServiceOrderController {
             const populated = await order.populate([
                 { path: 'company_id' },
                 { path: 'unit_id' },
+                { path: 'address_id' },
                 { path: 'service_id' },
                 { path: 'collaborator_id' }
             ]);

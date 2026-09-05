@@ -18,7 +18,10 @@ const CompanySchema = new Schema<ICompanyDocument>(
         next_payment_date: { type: Date, required: false },
         subscription_id: { type: Schema.Types.ObjectId, ref: 'subscriptions', required: false },
         catalog_module_enabled: { type: Boolean, default: true },
-        services: [{ type: Schema.Types.ObjectId, ref: 'Service', default: [] }]
+        services: [{ type: Schema.Types.ObjectId, ref: 'Service', default: [] }],
+        is_headquarters: { type: Boolean, default: false },
+        address_id: { type: Schema.Types.ObjectId, ref: 'Address', required: false },
+        service_radius_km: { type: Number, default: 50 }
     },
     {
         timestamps: true
