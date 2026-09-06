@@ -114,6 +114,12 @@ export class ServiceOrderController {
             const finalUnitId = unit_id || authUser?.unit_id || null;
             const userId = req.body.user_id || authUser?._id || null;
 
+            // Validação de Segurança: Cliente final precisa obrigatoriamente ter endereço de atendimento ou unidade
+            if ((!authUser || authUser?.type === 'user' || !finalCompanyId) && !address_id && !req.body.address_override && !finalUnitId) {
+                req.errorStatus = 422;
+                throw new Error('É obrigatório definir um endereço de atendimento para solicitar o serviço.');
+            }
+
             const cleanCollaboratorId =
                 collaborator_id === '' || collaborator_id === 'null' || collaborator_id === null
                     ? null
