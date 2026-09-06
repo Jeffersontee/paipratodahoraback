@@ -671,7 +671,7 @@ export class ServiceOrderController {
 
     static async evaluateOrder(req: Request, res: Response, next: NextFunction) {
         try {
-            const { follower_signature, stars, comment } = req.body;
+            const { follower_signature, stars, comment, tags } = req.body;
             const order = await ServiceOrder.findById(req.params.id);
             if (!order) {
                 req.errorStatus = 404;
@@ -692,13 +692,24 @@ export class ServiceOrderController {
             await order.save();
             NotificationService.sendServiceOrderPush(order._id.toString(), 'CONCLUIDO');
 
-            // Salva a avaliação anônima para o técnico se fornecida
+            // Salva a avaliação enriquecida na collection Rating
             if (stars) {
+                let companyId = order.company_id;
+                if (!companyId) {
+                    const matrizCompany = await Company.findOne({ is_headquarters: true });
+                    if (matrizCompany) companyId = matrizCompany._id;
+                }
+
                 const rating = new Rating({
                     service_order_id: order._id,
-                    company_id: order.company_id,
+                    company_id: companyId,
+                    user_id: order.user_id,
+                    collaborator_id: order.collaborator_id,
+                    service_id: order.service_id,
                     stars: Number(stars),
-                    comment: comment
+                    comment: comment,
+                    tags: Array.isArray(tags) ? tags : [],
+                    show_to_technician: order.show_to_technician || false
                 });
                 await rating.save();
             }
