@@ -15,11 +15,11 @@ export const ProdEnvironment: Environment = {
         pass: process.env.PROD_GMAIL_PASS || ''
     },
     redis: {
-        username: process.env.SERVER_REDIS_USERNAME,
-        password: process.env.SERVER_REDIS_PASSWORD,
-        host: process.env.SERVER_REDIS_HOST || '',
-        port: parseInt(process.env.SERVER_REDIS_PORT || '6379'),
-        url: process.env.REDIS_URL // Adicionado para suporte nativo Heroku
+        username: process.env.PROD_SERVER_REDIS_USERNAME || process.env.SERVER_REDIS_USERNAME,
+        password: process.env.PROD_SERVER_REDIS_PASSWORD || process.env.SERVER_REDIS_PASSWORD,
+        host: process.env.PROD_SERVER_REDIS_HOST || process.env.SERVER_REDIS_HOST || '',
+        port: parseInt(process.env.PROD_SERVER_REDIS_PORT || process.env.SERVER_REDIS_PORT || '6379'),
+        url: process.env.PROD_REDIS_URL || process.env.REDIS_URL // Suporte a URL de conexão completa
     },
     razorpay: {
         key_id: process.env.PROD_RAZORPAY_KEY_ID || '',

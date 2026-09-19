@@ -157,7 +157,8 @@ export class Server {
             'https://web.app',
             /\.web\.app$/,
             /\.firebaseapp\.com$/,
-            /\.herokuapp\.com$/
+            /\.herokuapp\.com$/,
+            /\.discloud\.app$/
         ];
 
         this.app.use(
@@ -194,7 +195,16 @@ export class Server {
     }
 
     setRoutes() {
+        this.app.get('/', (req, res) => {
+            res.json({
+                status: 'ok',
+                app: 'Bravo Backend API',
+                env: process.env.NODE_ENV || 'development',
+                timestamp: new Date().toISOString()
+            });
+        });
         this.app.use('/src/uploads', express.static('src/uploads'));
+        this.app.use('/uploads', express.static('src/uploads'));
         this.app.use('/api/users', UserRouter);
         this.app.use('/api/audits', AuditRouter);
         this.app.use('/api/help', HelpRouter);

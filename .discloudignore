@@ -1,0 +1,8 @@
+node_modules
+.git
+.agents
+.vscode
+docs
+coverage
+uploads
+*.log

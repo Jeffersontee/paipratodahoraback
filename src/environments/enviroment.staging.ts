@@ -15,10 +15,11 @@ export const StagingEnvironment: Environment = {
         pass: process.env.STAGING_GMAIL_PASS || ''
     },
     redis: {
-        username: process.env.SERVER_REDIS_USERNAME,
-        password: process.env.SERVER_REDIS_PASSWORD,
-        host: process.env.SERVER_REDIS_HOST || '',
-        port: parseInt(process.env.SERVER_REDIS_PORT || '6379') // Adicionado fallback
+        username: process.env.STAGING_SERVER_REDIS_USERNAME || process.env.SERVER_REDIS_USERNAME,
+        password: process.env.STAGING_SERVER_REDIS_PASSWORD || process.env.SERVER_REDIS_PASSWORD,
+        host: process.env.STAGING_SERVER_REDIS_HOST || process.env.SERVER_REDIS_HOST || '',
+        port: parseInt(process.env.STAGING_SERVER_REDIS_PORT || process.env.SERVER_REDIS_PORT || '6379'),
+        url: process.env.STAGING_REDIS_URL || process.env.REDIS_URL
     },
     razorpay: {
         key_id: process.env.STAGING_RAZORPAY_KEY_ID || '',
