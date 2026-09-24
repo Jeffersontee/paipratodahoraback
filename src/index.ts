@@ -4,7 +4,8 @@ Utils.dotenvConfigs();
 import { Server } from './server';
 
 export const app = new Server().app;
-let port = parseInt(process.env.PORT || '8080', 10);
+const isProd = process.env.NODE_ENV === 'production';
+let port = isProd ? parseInt(process.env.PORT || '8080', 10) : parseInt(process.env.DEV_PORT || '3000', 10);
 const hostname = '0.0.0.0';
 process.env.TZ = "America/Sao_Paulo";
 

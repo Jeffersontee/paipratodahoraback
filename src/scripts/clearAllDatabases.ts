@@ -1,5 +1,8 @@
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import * as path from 'path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+import mongoose from 'mongoose';
 import { User } from '../models/user.model';
 import { Company } from '../models/company.model';
 import { Unit } from '../models/unit.model';
@@ -9,21 +12,11 @@ import Plan from '../models/plan.model';
 import Subscription from '../models/subscription.model';
 import Invoice from '../models/invoice.model';
 import HelpCategory from '../models/HelpCategory';
-
 import { getEnvironmentVariables } from '../environments/enviroment';
 
-dotenv.config();
-
 const env = getEnvironmentVariables();
-const MONGO_URI =
-    env.db_uri ||
-    process.env.PROD_DB_URI ||
-    process.env.STAGING_DB_URI ||
-    process.env.DEV_DB_URI ||
-    process.env.MONGODB_URI ||
-    process.env.MONGO_URI ||
-    process.env.DB_URI ||
-    'mongodb://localhost:27017/bravo-instalacoes';
+const envName = process.env.NODE_ENV || 'development';
+const MONGO_URI = env.db_uri;
 const isProd = process.env.NODE_ENV === 'production';
 const isForce = process.env.FORCE_SEED === 'true' || process.env.FORCE === 'true';
 

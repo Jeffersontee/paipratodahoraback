@@ -99,6 +99,10 @@ export class ServiceOrderController {
         try {
             const { 
                 company_id, unit_id, service_id, collaborator_id, scheduled_date, notes,
+                observations, address_override, time_spent, km_driven, fuel_cost, zone,
+                requested_by, client_price, client_price_addition, technician_price,
+                contract_type, show_to_technician, proposed_date, schedule_pending_client_approval,
+                images_url,
                 gut_gravity, gut_urgency, gut_trend,
                 address_id 
             } = req.body;
@@ -115,7 +119,7 @@ export class ServiceOrderController {
             const userId = req.body.user_id || authUser?._id || null;
 
             // Validação de Segurança: Cliente final precisa obrigatoriamente ter endereço de atendimento ou unidade
-            if ((!authUser || authUser?.type === 'user' || !finalCompanyId) && !address_id && !req.body.address_override && !finalUnitId) {
+            if ((!authUser || authUser?.type === 'user' || !finalCompanyId) && !address_id && !address_override && !finalUnitId) {
                 req.errorStatus = 422;
                 throw new Error('É obrigatório definir um endereço de atendimento para solicitar o serviço.');
             }
@@ -140,6 +144,8 @@ export class ServiceOrderController {
             const trend = Number(gut_trend) || 1;
             const score = gravity * urgency * trend;
 
+            const syncedNotes = (observations || notes || '').toString().trim();
+
             const order = new ServiceOrder({
                 company_id: finalCompanyId,
                 unit_id: finalUnitId,
@@ -156,7 +162,22 @@ export class ServiceOrderController {
                         notes: initialStatus === 'AGENDADO' ? 'Ordem de serviço criada e agendada.' : 'Ordem de serviço solicitada.'
                     }
                 ],
-                notes,
+                notes: syncedNotes,
+                observations: syncedNotes,
+                address_override: address_override || '',
+                time_spent: time_spent || '',
+                km_driven: km_driven || '',
+                fuel_cost: fuel_cost || '',
+                zone: zone || '',
+                requested_by: requested_by || authUser?.name || '',
+                client_price: Number(client_price) || 0,
+                client_price_addition: Number(client_price_addition) || 0,
+                technician_price: Number(technician_price) || 0,
+                contract_type: contract_type || 'avulso',
+                show_to_technician: !!show_to_technician,
+                proposed_date: proposed_date || null,
+                schedule_pending_client_approval: !!schedule_pending_client_approval,
+                images_url: Array.isArray(images_url) ? images_url : [],
                 gut_gravity: gravity,
                 gut_urgency: urgency,
                 gut_trend: trend,
@@ -269,9 +290,22 @@ export class ServiceOrderController {
 
     static async update(req: Request, res: Response, next: NextFunction) {
         try {
-            const updateData = req.body;
+            const updateData = { ...req.body };
             // Prevent overriding critical fields directly via generic update
             delete updateData.timeline;
+
+            if (updateData.notes !== undefined || updateData.observations !== undefined) {
+                const syncedText = (updateData.observations ?? updateData.notes ?? '').toString().trim();
+                updateData.observations = syncedText;
+                updateData.notes = syncedText;
+            }
+
+            if (updateData.gut_gravity !== undefined || updateData.gut_urgency !== undefined || updateData.gut_trend !== undefined) {
+                const g = Number(updateData.gut_gravity) || 1;
+                const u = Number(updateData.gut_urgency) || 1;
+                const t = Number(updateData.gut_trend) || 1;
+                updateData.gut_score = g * u * t;
+            }
 
             if (updateData.collaborator_id !== undefined) {
                 if (

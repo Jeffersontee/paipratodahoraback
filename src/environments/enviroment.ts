@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+import * as path from 'path';
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
 import { ProdEnvironment } from './enviroment.prod';
 import { StagingEnvironment } from './enviroment.staging';
 import { DevEnvironment } from './enviroment.dev';

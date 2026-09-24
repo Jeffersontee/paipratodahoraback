@@ -1,16 +1,25 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import * as path from 'path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 import mongoose from 'mongoose';
 import * as fs from 'fs';
-import * as path from 'path';
 import HelpCategory from '../models/HelpCategory';
+import { getEnvironmentVariables } from '../environments/enviroment';
 
 async function runHelpExport() {
-    const dbUri = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.DB_URI || 'mongodb://localhost:27017/bravo-instalacoes';
+    const env = getEnvironmentVariables();
+    const envName = process.env.NODE_ENV || 'development';
+    const dbUri = env.db_uri;
+
+    if (!dbUri) {
+        console.error(`❌ db_uri não configurada para o ambiente [${envName.toUpperCase()}].`);
+        process.exit(1);
+    }
 
     try {
-        console.log('🚀 Conectando ao banco de dados para exportar tópicos de Ajuda...');
+        const maskedUri = dbUri.replace(/:([^:@]+)@/, ':****@');
+        console.log(`🚀 Conectando ao banco de dados do Bravo [${envName.toUpperCase()}] -> ${maskedUri}...`);
         await mongoose.connect(dbUri);
         console.log('✅ Conectado!');
 

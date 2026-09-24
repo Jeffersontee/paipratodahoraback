@@ -1,5 +1,8 @@
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import * as path from 'path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+import mongoose from 'mongoose';
 import { User } from '../models/user.model';
 import { Company } from '../models/company.model';
 import { Unit } from '../models/unit.model';
@@ -13,18 +16,9 @@ import { getEnvironmentVariables } from '../environments/enviroment';
 import { seedHelpTopics } from '../utils/seedHelpTopics';
 import bcrypt from 'bcrypt';
 
-dotenv.config();
-
 const env = getEnvironmentVariables();
-const MONGO_URI =
-    env.db_uri ||
-    process.env.PROD_DB_URI ||
-    process.env.STAGING_DB_URI ||
-    process.env.DEV_DB_URI ||
-    process.env.MONGODB_URI ||
-    process.env.MONGO_URI ||
-    process.env.DB_URI ||
-    'mongodb://localhost:27017/bravo-instalacoes';
+const envName = process.env.NODE_ENV || 'development';
+const MONGO_URI = env.db_uri;
 
 async function clearDatabase() {
     console.log('🧹 Limpando coleções antigas...');
@@ -231,14 +225,20 @@ export async function initBravoBase() {
 
 async function run() {
     try {
-        console.log('🔗 Conectando ao MongoDB...');
+        if (!MONGO_URI) {
+            console.error(`❌ [ERRO CRÍTICO]: db_uri não configurada para o ambiente [${envName.toUpperCase()}]. Verifique seu arquivo .env.`);
+            process.exit(1);
+        }
+
+        const maskedUri = MONGO_URI.replace(/:([^:@]+)@/, ':****@');
+        console.log(`🔗 Conectando ao MongoDB [${envName.toUpperCase()}] -> ${maskedUri}...`);
         await mongoose.connect(MONGO_URI);
-        console.log('✅ Conectado ao MongoDB.');
+        console.log(`✅ Conectado ao MongoDB [${envName.toUpperCase()}].`);
 
         await clearDatabase();
         await initBravoBase();
 
-        console.log('🎉 Estrutura base da Bravo inicializada com sucesso (sem empresas fictícias)!');
+        console.log(`🎉 Estrutura base da Bravo inicializada com sucesso no banco [${envName.toUpperCase()}]!`);
         process.exit(0);
     } catch (error) {
         console.error('❌ Erro durante a inicialização:', error);
