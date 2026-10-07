@@ -232,7 +232,7 @@ async function seedTestEnvironment() {
     // 6. GERENTES, ATENDENTES E TÉCNICOS ASSOCIADOS
     const gestorFlash = await User.create({
         name: 'Gestor Flash',
-        email: 'gestor@teste.com',
+        email: 'gestor@flash.com',
         password: hashedPassword,
         type: 'admin',
         role: 'manager',
@@ -705,9 +705,7 @@ async function seedTestEnvironment() {
             current_status: 'SOLICITADO',
             client_price: 120,
             notes: 'Manutenção de portão basculante.',
-            timeline: [
-                { status: 'SOLICITADO', timestamp: d10, notes: 'Aguardando confirmação de agenda.' }
-            ]
+            timeline: [{ status: 'SOLICITADO', timestamp: d10, notes: 'Aguardando confirmação de agenda.' }]
         }
     ]);
     console.log('✅ Ordens de Serviço semeadas.');
@@ -716,7 +714,9 @@ async function seedTestEnvironment() {
 async function run() {
     try {
         if (!MONGO_URI) {
-            console.error(`❌ [ERRO CRÍTICO]: db_uri não configurada para o ambiente [${envName.toUpperCase()}]. Verifique seu arquivo .env.`);
+            console.error(
+                `❌ [ERRO CRÍTICO]: db_uri não configurada para o ambiente [${envName.toUpperCase()}]. Verifique seu arquivo .env.`
+            );
             process.exit(1);
         }
 
@@ -728,7 +728,9 @@ async function run() {
         await clearDatabase();
         await seedTestEnvironment();
 
-        console.log(`🎉 Sementeira de teste e desenvolvimento finalizada com sucesso no banco [${envName.toUpperCase()}]!`);
+        console.log(
+            `🎉 Sementeira de teste e desenvolvimento finalizada com sucesso no banco [${envName.toUpperCase()}]!`
+        );
         process.exit(0);
     } catch (error) {
         console.error('❌ Erro durante o seed de teste:', error);

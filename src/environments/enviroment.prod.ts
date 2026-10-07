@@ -1,7 +1,7 @@
 import { Environment } from './enviroment';
 
 export const ProdEnvironment: Environment = {
-    get db_uri() { return process.env.PROD_DB_URI || ''; },
+    get db_uri() { return process.env.PROD_DB_URI || process.env.PROD_BD_URI || process.env.MONGO_URI || ''; },
     get heroku_uri() { return process.env.PROD_HEROKU_URI; },
     get notification_url() { return process.env.PROD_NOTIFICATION_URI; },
     get jwt_secret_key() { return process.env.PROD_JWT_SECRET_KEY || ''; },

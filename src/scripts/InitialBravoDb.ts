@@ -38,7 +38,7 @@ export async function initBravoBase() {
     console.log('🏛️ Inicializando estrutura base da plataforma Bravo Instalações...');
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('Bravo@25', salt);
+    const hashedPassword = await bcrypt.hash('Hora@25', salt);
 
     // 1. PLANOS SAAS DO SISTEMA
     console.log('📦 Semeando Planos SaaS...');
@@ -112,7 +112,7 @@ export async function initBravoBase() {
     console.log('👑 Semeando Equipe Administrativa Global (Super Admin & Staff)...');
     const superAdmin = await User.create({
         name: 'Super Admin',
-        email: 'admin@bravoinstalacoes.com.br',
+        email: 'admin@paipratodahora.com',
         password: hashedPassword,
         type: 'super_admin',
         role: 'root',
@@ -123,7 +123,7 @@ export async function initBravoBase() {
 
     const superSupervisor = await User.create({
         name: 'Carlos Supervisor Geral',
-        email: 'supervisor@bravoinstalacoes.com.br',
+        email: 'supervisor@paipratodahora.com',
         password: hashedPassword,
         type: 'super_staff',
         role: 'supervisor',
@@ -134,7 +134,7 @@ export async function initBravoBase() {
 
     const superOperator = await User.create({
         name: 'Luciana Operadora Geral',
-        email: 'operador@bravoinstalacoes.com.br',
+        email: 'operador@paipratodahora.com',
         password: hashedPassword,
         type: 'super_staff',
         role: 'backoffice',
@@ -145,7 +145,7 @@ export async function initBravoBase() {
 
     const globalTechnician = await User.create({
         name: 'Ronaldo Técnico Geral',
-        email: 'tecnico@bravoinstalacoes.com.br',
+        email: 'tecnico@paipratodahora.com',
         password: hashedPassword,
         type: 'collaborator',
         role: 'technician',
@@ -226,7 +226,9 @@ export async function initBravoBase() {
 async function run() {
     try {
         if (!MONGO_URI) {
-            console.error(`❌ [ERRO CRÍTICO]: db_uri não configurada para o ambiente [${envName.toUpperCase()}]. Verifique seu arquivo .env.`);
+            console.error(
+                `❌ [ERRO CRÍTICO]: db_uri não configurada para o ambiente [${envName.toUpperCase()}]. Verifique seu arquivo .env.`
+            );
             process.exit(1);
         }
 
