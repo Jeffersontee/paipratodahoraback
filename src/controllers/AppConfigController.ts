@@ -29,7 +29,7 @@ export class AppConfigController {
                 android: {
                     min: process.env.ANDROID_MIN_VERSION || '7.0.0',
                     latest: process.env.ANDROID_LATEST_VERSION || '7.0.0',
-                    url: 'https://play.google.com/store/apps/details?id=br.com.livecodesystem.bravoinstalacoes'
+                    url: 'https://play.google.com/store/apps/details?id=br.com.livecodesystem.paipratodahora'
                 },
                 ios: {
                     min: process.env.IOS_MIN_VERSION || '7.0.0',
