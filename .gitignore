@@ -44,3 +44,8 @@ coverage/
 
 # Uploads
 uploads/
+
+# Secrets & Credentials
+serviceAccountKey.json
+*.pem
+*.key
